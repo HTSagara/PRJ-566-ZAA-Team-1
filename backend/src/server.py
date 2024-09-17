@@ -1,6 +1,7 @@
 # ./src/server.py
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from datetime import datetime, timezone
 
 app = FastAPI()
 
@@ -11,7 +12,7 @@ async def root():
         content={
             "status": "healthy",
             "app": "WordVision Server",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     )
 
