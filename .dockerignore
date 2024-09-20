@@ -1,0 +1,29 @@
+# Ignore Python bytecode files
+*.pyc
+*.pyo
+__pycache__/
+
+# Ignore virtual environment directories
+venv/
+env/
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore logs, build, and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Ignore Git files
+.git/
+.gitignore
+
+# Ignore Docker files
+Dockerfile
+docker-compose.yml
+
+# Ignore Pipfile if you're using requirements.txt
+Pipfile
+Pipfile.lock
