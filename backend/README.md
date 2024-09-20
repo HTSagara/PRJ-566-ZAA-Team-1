@@ -9,7 +9,7 @@
 First, build the Docker image using the provided `Dockerfile`. Run the following command in the root of your project:
 
 ```bash
-docker build -t fastapi-server .
+docker build -t wordvision-server .
 ```
 
 This will create a Docker image named `wordvision-server`.
