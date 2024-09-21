@@ -1,21 +1,14 @@
-from fastapi import HTTPException, status
-
+from fastapi import HTTPException, status, Request
 from jose import jwt, JWTError
 import requests
-from urllib.parse import urlencode
-from dotenv import load_dotenv
 import os
 
-load_dotenv()
-COGNITO_REGION = os.getenv("COGNITO_REGION")
-COGNITO_USERPOOL_ID = os.getenv("COGNITO_USERPOOL_ID")
+# load_env() is already run on server.py
 COGNITO_CLIENT_ID = os.getenv("COGNITO_CLIENT_ID")
-COGNITO_DOMAIN = os.getenv("COGNITO_DOMAIN")
 COGNITO_ISSUER = os.getenv("COGNITO_ISSUER")
 JWKS_URL = f"{COGNITO_ISSUER}/.well-known/jwks.json"
-REDIRECT_URI = os.getenv("REDIRECT_URI")
 
-# Step 3: Middleware Function to Verify JWT Tokens
+# Function to Verify JWT Tokens
 def verify_jwt_token(token: str):
     try:
         # Fetch the public keys (JWKS) from Cognito
@@ -58,3 +51,19 @@ def verify_jwt_token(token: str):
     except JWTError as e:
         print(f"JWT verification error: {e}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+
+# Custom Middleware for Authentication
+async def auth_middleware(request: Request):
+
+    # Get the Authorization header from the request
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+    # Extract the token from the Authorization header ("Bearer <token>")
+    token = auth_header.split(" ")[1]
+    token_payload = verify_jwt_token(token)
+    request.state.user = token_payload
+
+    return request
