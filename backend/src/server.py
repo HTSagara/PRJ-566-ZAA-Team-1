@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException, status, Depends
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import FastAPI, HTTPException, status, Depends, Request
+from fastapi.responses import RedirectResponse
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 from dotenv import load_dotenv
@@ -24,24 +24,25 @@ app.include_router(user.router)
 # Public Route Example (no authentication required)
 @app.get("/public")
 async def public_route():
-    return {"message": "This is a public route. No authentication needed."}
+    return { "message": "This is a public route. No authentication needed." }
 
 # Protected Route Example
 @app.get("/protected", dependencies=[Depends(auth_middleware)])
-async def protected_route():
-    return {"message": "This is a protected route. Access granted."}
+async def protected_route(req: Request):
+    return { 
+        "message": "This is a protected route. Access granted.", 
+        "Authorization": req.headers.get("Authorization"),
+    }
 
 # Health check
 # Note: revert back to "/" once frontend login has been implemented
 @app.get("/healthcheck", status_code=200)
 async def root():
-    return JSONResponse(
-        content={
-            "status": "healthy",
-            "app": "WordVision Server",
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-    )
+    return {
+        "status": "healthy",
+        "app": "WordVision Server",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
 
 # Login
 # Note: delete this once frontend login has been implemented
