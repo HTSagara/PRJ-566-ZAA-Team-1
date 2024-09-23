@@ -3,3 +3,4 @@ uvicorn
 python-dotenv
 python-jose
 requests
+boto3
