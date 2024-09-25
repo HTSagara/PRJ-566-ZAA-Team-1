@@ -1,6 +1,8 @@
-import boto3
+
 from fastapi import APIRouter, Depends, Request, HTTPException, status
-from ..auth import auth_middleware, verify_jwt_token
+from ..auth import verify_jwt_token, auth_middleware, get_user_info
+import requests
+from fastapi import APIRouter, Depends, Request, HTTPException, status
 from dotenv import load_dotenv
 import os
 
@@ -16,27 +18,37 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 print(f"COGNITO_REGION: {COGNITO_REGION}")
 print(f"COGNITO_USERPOOL_ID: {COGNITO_USERPOOL_ID}")
 
-# Initialize Cognito Identity Provider client
-cognito_client = boto3.client('cognito-idp', region_name=COGNITO_REGION)
-
 
 # These routes are protected by auth_middleware
 router = APIRouter(dependencies=[Depends(auth_middleware)])
 
-# These are dummy user routes
+
+# Dummy user routes
 @router.get("/users/", tags=["users"])
 async def read_users():
     return [{"username": "Rick"}, {"username": "Morty"}]
 
 
 @router.get("/users/me", tags=["users"])
-async def read_user_me():
-    return {"username": "fakecurrentuser"}
+async def read_user_me(request: Request):
+    # Get the Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+
+    # Extract access token from the header ("Bearer <token>")
+    access_token = auth_header.split(" ")[1]
+
+    # Retrieve user info from Cognito using boto3
+    user_info = get_user_info(access_token)
+
+    return user_info
 
 
 @router.get("/users/{username}", tags=["users"])
 async def read_user(username: str):
     return {"username": username}
+
 
 @router.delete("/users/", tags=["users"])
 async def delete_user(request: Request):
@@ -61,3 +73,4 @@ async def delete_user(request: Request):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+

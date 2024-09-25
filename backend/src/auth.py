@@ -51,3 +51,19 @@ def verify_jwt_token(token: str):
     except JWTError as e:
         print(f"JWT verification error: {e}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+
+def get_user_info(access_token: str):
+    user_info_url = f"https://{COGNITO_DOMAIN}/oauth2/userInfo"
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+    response = requests.get(user_info_url, headers=headers)
+
+    if response.status_code == 200:
+        return response.json()  # User info returned by Cognito
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Failed to fetch user info from Cognito"
+        )
