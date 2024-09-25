@@ -5,6 +5,7 @@ import requests
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from dotenv import load_dotenv
 import os
+import boto3
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -21,6 +22,9 @@ print(f"COGNITO_USERPOOL_ID: {COGNITO_USERPOOL_ID}")
 
 # These routes are protected by auth_middleware
 router = APIRouter(dependencies=[Depends(auth_middleware)])
+
+# Initialize Cognito Identity Provider client
+cognito_client = boto3.client('cognito-idp', region_name=COGNITO_REGION)
 
 
 # Dummy user routes
