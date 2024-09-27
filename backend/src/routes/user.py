@@ -2,10 +2,7 @@
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from ..auth import verify_jwt_token, auth_middleware, get_user_info
 from pydantic import BaseModel
-import requests
-from fastapi import APIRouter, Depends, Request, HTTPException, status
 from dotenv import load_dotenv
-from typing import Optional
 import os
 import boto3
 
