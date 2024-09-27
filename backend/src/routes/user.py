@@ -8,31 +8,17 @@ import boto3
 
 # Load environment variables from the .env file
 load_dotenv()
-
 COGNITO_REGION = os.getenv("COGNITO_REGION")
 COGNITO_USERPOOL_ID = os.getenv("COGNITO_USERPOOL_ID")
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-
-# Debugging prints to verify
-print(f"COGNITO_REGION: {COGNITO_REGION}")
-print(f"COGNITO_USERPOOL_ID: {COGNITO_USERPOOL_ID}")
-
-
-# These routes are protected by auth_middleware
-router = APIRouter(dependencies=[Depends(auth_middleware)])
 
 # Initialize Cognito Identity Provider client
 cognito_client = boto3.client('cognito-idp', region_name=COGNITO_REGION)
 
-
-# Dummy user routes
-@router.get("/users/", tags=["users"])
-async def read_users():
-    return [{"username": "Rick"}, {"username": "Morty"}]
+# These routes are protected by auth_middleware
+router = APIRouter(dependencies=[Depends(auth_middleware)])
 
 
-@router.get("/users/me", tags=["users"])
+@router.get("/user", tags=["user"])
 async def read_user_me(request: Request):
     # Get the Authorization header
     auth_header = request.headers.get("Authorization")
@@ -48,18 +34,19 @@ async def read_user_me(request: Request):
     return user_info
 
 
-@router.get("/users/{username}", tags=["users"])
-async def read_user(username: str):
-    return {"username": username}
-
-
-@router.delete("/users/", tags=["users"])
+@router.delete("/user", tags=["user"])
 async def delete_user(request: Request):
-    # Extract token from the auth middleware
-    token = request.headers.get("Authorization").split(" ")[1]
+
+    # Get the Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+
+    # Extract access token from the header ("Bearer <token>")
+    access_token = auth_header.split(" ")[1]
     
     # Get the user's 'sub' from the decoded JWT payload
-    decoded_token = verify_jwt_token(token)
+    decoded_token = verify_jwt_token(access_token)
     username = decoded_token.get("sub")
     if not username:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User identifier not found in token")
@@ -83,7 +70,7 @@ class UpdateUserModel(BaseModel):
     email: str
     name: str
 
-@router.put("/user", tags=["users"])
+@router.put("/user", tags=["user"])
 async def update_user(request: Request, updated_info: UpdateUserModel):
     # Get the Authorization header
     auth_header = request.headers.get("Authorization")
