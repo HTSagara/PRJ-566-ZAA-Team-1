@@ -85,11 +85,10 @@ class UpdateUserModel(BaseModel):
     birthdate: str
     email: str
     name: str
-    phone_number: Optional[str] = None
-    family_name: Optional[str] = None
 
 @router.put("/user", tags=["users"])
 async def update_user(request: Request, updated_info: UpdateUserModel):
+    # Get the Authorization header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
@@ -107,17 +106,6 @@ async def update_user(request: Request, updated_info: UpdateUserModel):
         {'Name': 'name', 'Value': updated_info.name}
     ]
 
-    if updated_info.phone_number:
-        user_attributes.append({
-            'Name': 'phone_number',
-            'Value': updated_info.phone_number
-        })
-    if updated_info.family_name:
-        user_attributes.append({
-            'Name': 'family_name',
-            'Value': updated_info.family_name
-        })
-
     try:
         cognito_client.admin_update_user_attributes(
             UserPoolId=COGNITO_USERPOOL_ID,
@@ -126,6 +114,7 @@ async def update_user(request: Request, updated_info: UpdateUserModel):
         )
         return {"message": "User details updated successfully"}
     
+    # Exceptions
     except cognito_client.exceptions.UserNotFoundException:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     
