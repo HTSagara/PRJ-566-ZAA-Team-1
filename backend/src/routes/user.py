@@ -1,8 +1,7 @@
 
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from ..auth import verify_jwt_token, auth_middleware, get_user_info
-import requests
-from fastapi import APIRouter, Depends, Request, HTTPException, status
+from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
 import boto3
@@ -78,3 +77,43 @@ async def delete_user(request: Request):
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+
+class UpdateUserModel(BaseModel):
+    birthdate: str
+    email: str
+    name: str
+
+@router.put("/user", tags=["users"])
+async def update_user(request: Request, updated_info: UpdateUserModel):
+    # Get the Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+
+    access_token = auth_header.split(" ")[1]
+
+    decoded_token = verify_jwt_token(access_token)
+    username = decoded_token.get("sub")
+    if not username:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User identifier not found in token")
+
+    user_attributes = [
+        {'Name': 'birthdate', 'Value': updated_info.birthdate},
+        {'Name': 'email', 'Value': updated_info.email},
+        {'Name': 'name', 'Value': updated_info.name}
+    ]
+
+    try:
+        cognito_client.admin_update_user_attributes(
+            UserPoolId=COGNITO_USERPOOL_ID,
+            Username=username,
+            UserAttributes=user_attributes
+        )
+        return {"message": "User details updated successfully"}
+    
+    # Exceptions
+    except cognito_client.exceptions.UserNotFoundException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
