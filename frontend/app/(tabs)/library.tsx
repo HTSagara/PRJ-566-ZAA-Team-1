@@ -87,12 +87,6 @@ export default function LibraryScreen() {
     </TouchableOpacity>
   </View>
 
-  {/* Centered Title and Subtitle */}
-  <ThemedView style={styles.centeredContainer}>
-    <ThemedText type="title" style={styles.centeredText}>Book Library</ThemedText>
-    <ThemedText style={styles.centeredText}>Word Vision's list of books</ThemedText>
-  </ThemedView>
-
   {/* Book cards list */}
   <FlatList
     data={books}
