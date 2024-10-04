@@ -18,29 +18,17 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Landing",
-          tabBarStyle: { display: 'none' },
+          tabBarStyle: { display: "none" },
           tabBarButton: () => null,
         }}
       />
       <Tabs.Screen
         name="library"
         options={{
-          title: "Library",
+          title: "Home",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
               name={focused ? "book" : "book-outline"}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="user"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              name={focused ? "person" : "person-outline"}
               color={color}
             />
           ),
