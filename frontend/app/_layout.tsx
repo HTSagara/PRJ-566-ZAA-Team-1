@@ -10,13 +10,13 @@ export default function DrawerLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer>
         <Drawer.Screen
-          name="(tabs)"
+          name="user"
           options={{
-            drawerLabel: "Home",
+            drawerLabel: "Profile",
             title: "WordVision",
             drawerIcon: ({ color, focused }) => (
               <TabBarIcon
-                name={focused ? "home" : "home-outline"}
+                name={focused ? "person" : "person-outline"}
                 color={color}
               />
             ),
@@ -40,6 +40,14 @@ export default function DrawerLayout() {
           name="+not-found"
           options={{
             drawerLabel: "",
+            drawerItemStyle: { display: "none" },
+          }}
+        />
+        <Drawer.Screen
+          name="(tabs)"
+          options={{
+            drawerLabel: "",
+            title: "WordVision",
             drawerItemStyle: { display: "none" },
           }}
         />
