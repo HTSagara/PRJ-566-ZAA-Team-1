@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, status, Depends, Request
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 from dotenv import load_dotenv
@@ -17,6 +18,14 @@ COGNITO_DOMAIN = os.getenv("COGNITO_DOMAIN")
 REDIRECT_URI = os.getenv("REDIRECT_URI")
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # include user routes
 app.include_router(user.router)
