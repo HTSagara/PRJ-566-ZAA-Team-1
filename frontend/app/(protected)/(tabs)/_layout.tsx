@@ -15,14 +15,6 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
-        options={{
-          title: "Landing",
-          tabBarStyle: { display: "none" },
-          tabBarButton: () => null,
-        }}
-      />
-      <Tabs.Screen
         name="library"
         options={{
           title: "Home",

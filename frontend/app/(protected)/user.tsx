@@ -8,7 +8,9 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedTextInput } from "@/components/ThemedTextInput";
 import { ThemedButton } from "@/components/ThemedButton";
 
-const user = () => {
+import { Auth } from '@/utilities/auth';
+
+export default function user() {
   const [email, setEmail] = useState("dummy email");
   const [name, setName] = useState("dummy name");
   const [birthdate, setBirthdate] = useState("dummy birthdate");
@@ -55,6 +57,13 @@ const user = () => {
             darkFg="white" darkBg="rgb(21 128 61)"
             title="Edit"
             onPress={() => console.log("edit button")}/>
+
+          <ThemedButton 
+            style={styles.button}
+            lightFg="white" lightBg="rgb(34 197 94)"
+            darkFg="white" darkBg="rgb(21 128 61)"
+            title="Log Out"
+            onPress={() => Auth.signOut()}/>
 
           <ThemedButton 
             style={styles.button}
@@ -113,5 +122,3 @@ const styles = StyleSheet.create({
   },
 
 });
-
-export default user;
