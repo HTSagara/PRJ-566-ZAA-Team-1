@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -8,13 +8,64 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedTextInput } from "@/components/ThemedTextInput";
 import { ThemedButton } from "@/components/ThemedButton";
 
-import { Auth } from '@/utilities/auth';
+import { Auth, getUser } from "@/utilities/auth";
+
+interface UserInfo {
+  name: string;
+  birthdate: string;
+  email: string;
+}
 
 export default function user() {
-  const [email, setEmail] = useState("dummy email");
-  const [name, setName] = useState("dummy name");
-  const [birthdate, setBirthdate] = useState("dummy birthdate");
+
+  const backendApiUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL || 'http://localhost:8080';
+
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [editMode, setEditMode] = useState(false);
+
+  useEffect(() => {
+    async function init() {
+      const user = await getUser();
+      if (!user) {
+        console.info('No user was found');
+        return;
+      }
+
+      // Log the user info for debugging purposes
+      console.log({ user }, 'User Creds');
+
+      const url = `${backendApiUrl}/user`;
+      console.debug(`Calling GET ${url}...`);
+
+      try {
+        const res = await fetch(url, {
+          // Generate headers with the proper Authorization bearer token to pass.
+          // We are using the `authorizationHeaders()` helper method we defined
+          // earlier, to automatically attach the user's ID token.
+          headers: user.authorizationHeaders(),
+        });
+
+        if (!res.ok) {
+          throw new Error(`${res.status} ${res.statusText}`);
+        }
+
+        const data = (await res.json()) as UserInfo;
+        console.debug('Successfully got user data', { data });
+
+        setName(data.name);
+        setBirthdate(data.birthdate);
+        setEmail(data.email);
+      } 
+      catch (err) {
+        console.error('Unable to call GET /user', { err });
+      }
+    }
+
+    init();
+  }, []);
+
 
   return (
     <ParallaxScrollView
