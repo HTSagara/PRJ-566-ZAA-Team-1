@@ -24,6 +24,7 @@ export default function user() {
   const [name, setName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [editMode, setEditMode] = useState(false);
+  const [originalData, setOriginalData] = useState({ name: "", birthdate: "", email: "" });
 
   useEffect(() => {
     async function init() {
@@ -33,17 +34,11 @@ export default function user() {
         return;
       }
 
-      // Log the user info for debugging purposes
-      console.log({ user }, 'User Creds');
-
       const url = `${backendApiUrl}/user`;
       console.debug(`Calling GET ${url}...`);
 
       try {
         const res = await fetch(url, {
-          // Generate headers with the proper Authorization bearer token to pass.
-          // We are using the `authorizationHeaders()` helper method we defined
-          // earlier, to automatically attach the user's ID token.
           headers: user.authorizationHeaders(),
         });
 
@@ -57,8 +52,8 @@ export default function user() {
         setName(data.name);
         setBirthdate(data.birthdate);
         setEmail(data.email);
-      } 
-      catch (err) {
+        setOriginalData(data); // Set the initial state
+      } catch (err) {
         console.error('Unable to call GET /user', { err });
       }
     }
@@ -66,6 +61,41 @@ export default function user() {
     init();
   }, []);
 
+  const handleSave = async () => {
+    try {
+      const user = await getUser();
+      const url = `${backendApiUrl}/user`;
+
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: {
+          ...user.authorizationHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, birthdate }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+
+      console.debug('User details updated successfully');
+      setEditMode(false);
+
+      // Update original data
+      setOriginalData({ name, email, birthdate });
+    } catch (err) {
+      console.error('Failed to update user details', { err });
+    }
+  };
+
+  const handleCancel = () => {
+    // Revert the state to the last saved original data
+    setName(originalData.name);
+    setBirthdate(originalData.birthdate);
+    setEmail(originalData.email);
+    setEditMode(false);
+  };
 
   return (
     <ParallaxScrollView
@@ -74,7 +104,7 @@ export default function user() {
         <Ionicons size={310} name="person-outline" style={styles.headerImage} />
       }
     >
-      <ThemedView style={styles.centeredContainer}> 
+      <ThemedView style={styles.centeredContainer}>
         <ThemedText type="title" style={styles.title}>User Profile</ThemedText>
 
         <View style={styles.inputContainer}>
@@ -83,7 +113,7 @@ export default function user() {
             style={styles.input}
             onChangeText={setEmail}
             value={email}
-            editable={editMode}
+            editable={false}
           />
           <ThemedText type="default">Name</ThemedText>
           <ThemedTextInput
@@ -102,31 +132,56 @@ export default function user() {
         </View>
 
         <View style={styles.buttonContainer}>
-          <ThemedButton 
-            style={styles.button}
-            lightFg="white" lightBg="rgb(34 197 94)"
-            darkFg="white" darkBg="rgb(21 128 61)"
-            title="Edit"
-            onPress={() => console.log("edit button")}/>
+          {editMode ? (
+            <>
+              <ThemedButton
+                style={styles.button}
+                lightFg="white" lightBg="rgb(34 197 94)"
+                darkFg="white" darkBg="rgb(21 128 61)"
+                title="Save"
+                onPress={handleSave}
+              />
+              <ThemedButton
+                style={styles.button}
+                lightFg="white" lightBg="rgb(185 28 28)"
+                darkFg="rgb(254 226 226)" darkBg="rgb(248 113 113)"
+                title="Cancel"
+                onPress={handleCancel}
+              />
+            </>
+          ) : (
+            <ThemedButton
+              style={styles.button}
+              lightFg="white" lightBg="rgb(34 197 94)"
+              darkFg="white" darkBg="rgb(21 128 61)"
+              title="Edit"
+              onPress={() => setEditMode(true)}
+            />
+          )}
 
-          <ThemedButton 
-            style={styles.button}
-            lightFg="white" lightBg="rgb(34 197 94)"
-            darkFg="white" darkBg="rgb(21 128 61)"
-            title="Log Out"
-            onPress={() => Auth.signOut()}/>
-
-          <ThemedButton 
-            style={styles.button}
-            lightFg="white" lightBg="rgb(185 28 28)"
-            darkFg="rgb(254 226 226)" darkBg="rgb(248 113 113)"
-            title="Delete"
-            onPress={() => console.log("delete button")}/>
+          {!editMode && (
+            <>
+              <ThemedButton
+                style={styles.button}
+                lightFg="white" lightBg="rgb(34 197 94)"
+                darkFg="white" darkBg="rgb(21 128 61)"
+                title="Log Out"
+                onPress={() => Auth.signOut()}
+              />
+              <ThemedButton
+                style={styles.button}
+                lightFg="white" lightBg="rgb(185 28 28)"
+                darkFg="rgb(254 226 226)" darkBg="rgb(248 113 113)"
+                title="Delete"
+                onPress={() => console.log("delete button")}
+              />
+            </>
+          )}
         </View>
       </ThemedView>
     </ParallaxScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   headerImage: {
@@ -140,7 +195,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,
-    marginBottom: 20, 
+    marginBottom: 20,
   },
 
   title: {
@@ -171,5 +226,4 @@ const styles = StyleSheet.create({
   button: {
     width: 150,
   },
-
 });
