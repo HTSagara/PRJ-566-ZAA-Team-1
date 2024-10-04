@@ -35,7 +35,7 @@ Amplify.configure({
       // your app's OpenID Connect scopes, go to Amazon Cognito in the AWS Console
       // then: Amazon Cognito > User Pools > {your user pool} > App client > {your client}
       // and look in the "Hosted UI" section under "OpenID Connect Scopes".
-      scope: ['email', 'phone', 'openid'],
+      scope: ['email', 'phone', 'openid', "profile"],
 
       // NOTE: these must match what you have specified in the Hosted UI
       // app settings for Callback and Redirect URls (e.g., no trailing slash).
@@ -79,7 +79,7 @@ async function getUser(): Promise<User | null> {
       authorizationHeaders: (type = 'application/json') => {
         const headers = {
           'Content-Type': type,
-          Authorization: `Bearer ${idToken}`,
+          Authorization: `Bearer ${accessToken}`,
         };
         return headers;
       },
