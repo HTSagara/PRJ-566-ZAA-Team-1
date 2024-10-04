@@ -1,4 +1,3 @@
-
 import {
   Image,
   StyleSheet,
@@ -6,15 +5,33 @@ import {
   TouchableOpacity,
   Text,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useState, useEffect } from 'react';
+import { Redirect } from 'expo-router';
 
-export default function HomeScreen() {
-  const navigation = useNavigation();
+import { Auth, User, getUser } from '@/utilities/auth';
 
-  const handleGetStarted = () => {
-    // Navigate to the login screen
-    navigation.navigate('library');
-  };
+export default function LandingPage() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    async function init() {
+      const user = await getUser();
+      if (!user) {
+        console.info('No user was found');
+        return;
+      }
+      setUser(user);
+
+      // Log the user info for debugging purposes
+      console.log({ user }, 'User Info');
+    }
+
+    init();
+  }, []);
+
+  if (user) {
+    return <Redirect href="/library" />;
+  }
 
   return (
     <View style={styles.container}>
@@ -24,7 +41,7 @@ export default function HomeScreen() {
       />
 
       <View style={styles.headerRight}>
-        <TouchableOpacity onPress={handleGetStarted} style={styles.uploadButton}>
+        <TouchableOpacity onPress={() => Auth.federatedSignIn()} style={styles.uploadButton}>
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
       </View>

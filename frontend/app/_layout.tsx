@@ -1,57 +1,14 @@
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Drawer } from "expo-router/drawer";
-import { TabBarIcon } from "@/components/navigation/TabBarIcon";
-import { useColorScheme } from "@/hooks/useColorScheme";
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Slot } from 'expo-router';
 
-export default function DrawerLayout() {
+import { useColorScheme } from '@/hooks/useColorScheme';
+
+export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Drawer>
-        <Drawer.Screen
-          name="user"
-          options={{
-            drawerLabel: "Profile",
-            title: "WordVision",
-            drawerIcon: ({ color, focused }) => (
-              <TabBarIcon
-                name={focused ? "person" : "person-outline"}
-                color={color}
-              />
-            ),
-          }}
-        />
-        <Drawer.Screen
-          name="logout"
-          options={{
-            drawerLabel: "Log out",
-            title: "Log out",
-            drawerIcon: ({ color, focused }) => (
-              <TabBarIcon
-                name={focused ? "log-out" : "log-out-outline"}
-                color={color}
-              />
-            ),
-          }}
-        />
-        {/* Hide unwanted tabs from the drawer */}
-        <Drawer.Screen
-          name="+not-found"
-          options={{
-            drawerLabel: "",
-            drawerItemStyle: { display: "none" },
-          }}
-        />
-        <Drawer.Screen
-          name="(tabs)"
-          options={{
-            drawerLabel: "",
-            title: "WordVision",
-            drawerItemStyle: { display: "none" },
-          }}
-        />
-      </Drawer>
-    </GestureHandlerRootView>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <Slot />
+    </ThemeProvider>
   );
 }

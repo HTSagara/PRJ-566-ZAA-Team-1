@@ -30,6 +30,7 @@ export default function LibraryScreen() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
+
   // Fetch book data from JSON 
   useEffect(() => {
     const fetchBooks = async () => {
