@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from ..auth import verify_jwt_token, auth_middleware, get_user_info
 from pydantic import BaseModel
@@ -67,7 +66,6 @@ async def delete_user(request: Request):
 
 class UpdateUserModel(BaseModel):
     birthdate: str
-    email: str
     name: str
 
 @router.put("/user", tags=["user"])
@@ -86,7 +84,6 @@ async def update_user(request: Request, updated_info: UpdateUserModel):
 
     user_attributes = [
         {'Name': 'birthdate', 'Value': updated_info.birthdate},
-        {'Name': 'email', 'Value': updated_info.email},
         {'Name': 'name', 'Value': updated_info.name}
     ]
 
