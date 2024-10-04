@@ -17,7 +17,8 @@ interface UserInfo {
 }
 
 export default function user() {
-  const backendApiUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL || 'http://localhost:8080';
+
+  const backendApiUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
