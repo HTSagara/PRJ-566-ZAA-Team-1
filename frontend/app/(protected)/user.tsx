@@ -67,6 +67,9 @@ export default function user() {
   const handleSave = async () => {
     try {
       const user = await getUser();
+      if (!user) {
+        throw new Error("user is undefined");
+      }
       const url = `${backendApiUrl}/user`;
 
       const res = await fetch(url, {
@@ -109,6 +112,9 @@ export default function user() {
     if (confirmed) {
       try {
         const user = await getUser();
+        if (!user) {
+          throw new Error("user is undefined");
+        }
         const url = `${backendApiUrl}/user`;
 
         const res = await fetch(url, {
