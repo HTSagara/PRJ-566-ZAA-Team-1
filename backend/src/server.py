@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 from dotenv import load_dotenv
 from urllib.parse import urlencode
 from database.db import db_connection
+from routes import book
 import requests
 import os
 
@@ -97,3 +98,5 @@ async def callback(code: str|None = None):
         return {"id_token": id_token, "access_token": access_token, "expires_in": expires_in}  # Return both tokens
 
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to exchange code for tokens")
+
+app.include_router(book.router)

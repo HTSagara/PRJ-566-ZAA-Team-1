@@ -6,16 +6,21 @@ import os
 
 load_dotenv()
 MONGODB_DB_PASSWORD = os.getenv("MONGODB_DB_PASSWORD")
+MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME")
+MONGODB_DB_COLLECTION = os.getenv("MONGODB_DB_COLLECTION")
 
 uri = f"mongodb+srv://wordvisionapp:{MONGODB_DB_PASSWORD}@wordvision.1jubm.mongodb.net/?retryWrites=true&w=majority&appName=WordVision"
 
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
+db = client[MONGODB_DB_NAME]
+collection = db[MONGODB_DB_COLLECTION]
 
 # Send a ping to confirm a successful connection
 def db_connection():
     try:
         client.admin.command('ping')
+        print(f"Connected to:\nDATABASE:{db}\nCOLLECTION:{collection}")
         print("Pinged your deployment. You successfully connected to MongoDB!")
         return True
     except Exception as e:
