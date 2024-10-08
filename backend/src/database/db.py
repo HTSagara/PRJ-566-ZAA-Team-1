@@ -4,6 +4,7 @@ from pymongo.server_api import ServerApi
 from dotenv import load_dotenv
 import os
 
+load_dotenv()
 MONGODB_DB_PASSWORD = os.getenv("MONGODB_DB_PASSWORD")
 
 uri = f"mongodb+srv://wordvisionapp:{MONGODB_DB_PASSWORD}@wordvision.1jubm.mongodb.net/?retryWrites=true&w=majority&appName=WordVision"

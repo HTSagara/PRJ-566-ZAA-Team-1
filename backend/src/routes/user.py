@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, HTTPException, status
-from ..auth import verify_jwt_token, auth_middleware, get_user_info
+from auth import verify_jwt_token, auth_middleware, get_user_info
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
