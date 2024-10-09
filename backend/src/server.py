@@ -5,13 +5,15 @@ from datetime import datetime, timezone
 from urllib.parse import urlencode
 from dotenv import load_dotenv
 from urllib.parse import urlencode
+from database.db import db_connection
 import requests
 import os
 
-from .auth import auth_middleware
-from .routes import user
+from auth import auth_middleware
+from routes import user
 
 load_dotenv()
+
 
 COGNITO_CLIENT_ID = os.getenv("COGNITO_CLIENT_ID")
 COGNITO_DOMAIN = os.getenv("COGNITO_DOMAIN")
@@ -33,6 +35,7 @@ app.include_router(user.router)
 # Public Route Example (no authentication required)
 @app.get("/public")
 async def public_route():
+    db_connection()
     return { "message": "This is a public route. No authentication needed." }
 
 # Protected Route Example
