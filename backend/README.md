@@ -1,6 +1,9 @@
 ## Requirements
 
 - [Docker](https://www.docker.com/products/docker-desktop) (Installed and running on your machine)
+- `backend/.env`
+  - You can get the `.env` file from our teams folder [`.env.backend.txt`].
+  - Rename it to `.env` and put it inside `backend/`
 
 ## Setup
 
