@@ -17,20 +17,23 @@ interface UserInfo {
 }
 
 export default function user() {
-
-  const backendApiUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+  const backendApiUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [editMode, setEditMode] = useState(false);
-  const [originalData, setOriginalData] = useState({ name: "", birthdate: "", email: "" });
+  const [originalData, setOriginalData] = useState({
+    name: "",
+    birthdate: "",
+    email: "",
+  });
 
   useEffect(() => {
     async function init() {
       const user = await getUser();
       if (!user) {
-        console.info('No user was found');
+        console.info("No user was found");
         return;
       }
 
@@ -47,14 +50,14 @@ export default function user() {
         }
 
         const data = (await res.json()) as UserInfo;
-        console.debug('Successfully got user data', { data });
+        console.debug("Successfully got user data", { data });
 
         setName(data.name);
         setBirthdate(data.birthdate);
         setEmail(data.email);
         setOriginalData(data); // Set the initial state
       } catch (err) {
-        console.error('Unable to call GET /user', { err });
+        console.error("Unable to call GET /user", { err });
       }
     }
 
@@ -64,6 +67,9 @@ export default function user() {
   const handleSave = async () => {
     try {
       const user = await getUser();
+      if (!user) {
+        throw new Error("user is undefined");
+      }
       const url = `${backendApiUrl}/user`;
 
       const res = await fetch(url, {
@@ -79,13 +85,13 @@ export default function user() {
         throw new Error(`${res.status} ${res.statusText}`);
       }
 
-      console.debug('User details updated successfully');
+      console.debug("User details updated successfully");
       setEditMode(false);
 
       // Update original data
       setOriginalData({ name, email, birthdate });
     } catch (err) {
-      console.error('Failed to update user details', { err });
+      console.error("Failed to update user details", { err });
     }
   };
 
@@ -97,6 +103,42 @@ export default function user() {
     setEditMode(false);
   };
 
+  const handleDelete = async () => {
+    // Ask for confirmation before deletion
+    const confirmed = window.confirm(
+      "So SAD to see you go :( Sure to DELETE your account?"
+    );
+
+    if (confirmed) {
+      try {
+        const user = await getUser();
+        if (!user) {
+          throw new Error("user is undefined");
+        }
+        const url = `${backendApiUrl}/user`;
+
+        const res = await fetch(url, {
+          method: "DELETE",
+          headers: {
+            ...user.authorizationHeaders(),
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`${res.status} ${res.statusText}`);
+        }
+
+        console.log("User account deleted successfully");
+
+        // Redirect to the landing page (reusing logout redirection logic)
+        Auth.signOut();
+      } catch (err) {
+        console.error("Failed to delete user account", { err });
+      }
+    }
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#D0D0D0", dark: "#353636" }}
@@ -105,7 +147,9 @@ export default function user() {
       }
     >
       <ThemedView style={styles.centeredContainer}>
-        <ThemedText type="title" style={styles.title}>User Profile</ThemedText>
+        <ThemedText type="title" style={styles.title}>
+          User Profile
+        </ThemedText>
 
         <View style={styles.inputContainer}>
           <ThemedText type="default">Email</ThemedText>
@@ -136,15 +180,19 @@ export default function user() {
             <>
               <ThemedButton
                 style={styles.button}
-                lightFg="white" lightBg="rgb(34 197 94)"
-                darkFg="white" darkBg="rgb(21 128 61)"
+                lightFg="white"
+                lightBg="rgb(34 197 94)"
+                darkFg="white"
+                darkBg="rgb(21 128 61)"
                 title="Save"
                 onPress={handleSave}
               />
               <ThemedButton
                 style={styles.button}
-                lightFg="white" lightBg="rgb(185 28 28)"
-                darkFg="rgb(254 226 226)" darkBg="rgb(248 113 113)"
+                lightFg="white"
+                lightBg="rgb(185 28 28)"
+                darkFg="rgb(254 226 226)"
+                darkBg="rgb(248 113 113)"
                 title="Cancel"
                 onPress={handleCancel}
               />
@@ -152,8 +200,10 @@ export default function user() {
           ) : (
             <ThemedButton
               style={styles.button}
-              lightFg="white" lightBg="rgb(34 197 94)"
-              darkFg="white" darkBg="rgb(21 128 61)"
+              lightFg="white"
+              lightBg="rgb(34 197 94)"
+              darkFg="white"
+              darkBg="rgb(21 128 61)"
               title="Edit"
               onPress={() => setEditMode(true)}
             />
@@ -163,17 +213,21 @@ export default function user() {
             <>
               <ThemedButton
                 style={styles.button}
-                lightFg="white" lightBg="rgb(34 197 94)"
-                darkFg="white" darkBg="rgb(21 128 61)"
+                lightFg="white"
+                lightBg="rgb(34 197 94)"
+                darkFg="white"
+                darkBg="rgb(21 128 61)"
                 title="Log Out"
                 onPress={() => Auth.signOut()}
               />
               <ThemedButton
                 style={styles.button}
-                lightFg="white" lightBg="rgb(185 28 28)"
-                darkFg="rgb(254 226 226)" darkBg="rgb(248 113 113)"
+                lightFg="white"
+                lightBg="rgb(185 28 28)"
+                darkFg="rgb(254 226 226)"
+                darkBg="rgb(248 113 113)"
                 title="Delete"
-                onPress={() => console.log("delete button")}
+                onPress={handleDelete}
               />
             </>
           )}
@@ -192,14 +246,14 @@ const styles = StyleSheet.create({
   },
 
   centeredContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 20,
     marginBottom: 20,
   },
 
   title: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 20,
     paddingHorizontal: 16,
   },

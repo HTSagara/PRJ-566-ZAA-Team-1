@@ -9,6 +9,7 @@ import boto3
 load_dotenv()
 COGNITO_REGION = os.getenv("COGNITO_REGION")
 COGNITO_USERPOOL_ID = os.getenv("COGNITO_USERPOOL_ID")
+print(f"COGNITO_REGION loaded: {COGNITO_REGION}")
 
 # Initialize Cognito Identity Provider client
 cognito_client = boto3.client('cognito-idp', region_name=COGNITO_REGION)
