@@ -44,5 +44,6 @@ class Book:
         collection = db[self.ownerId]
         book_metadata = self.__dict__
         collection.insert_one(book_metadata)
+        self.updated = datetime.now()
         print(f"Book metadata saved to MongoDB with ID: {self.id}")
 
