@@ -1,6 +1,6 @@
 # src/database/book_metadata.py
 from ebooklib import epub
-from .db import db_connection, collection
+from .mongodb import db_connection, collection
 
 db_connection()
 
@@ -36,5 +36,5 @@ def process_epub(epub_path):
     save_metadata_to_mongodb(metadata)
 
 # Example usage
-epub_file_path = "/app/src/epubs/kuttner-valley-of-the-flame.epub"
+epub_file_path = "/app/src/epubs/poe-balloon-hoax-illustrations.epub"
 process_epub(epub_file_path)
