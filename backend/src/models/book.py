@@ -13,10 +13,6 @@ from database.s3_db import write_file_data
 load_dotenv()
 BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
 
-# Helper function to hash email
-def hash_email(email: str) -> str:
-    return hashlib.sha256(email.encode()).hexdigest()
-
 # Book class definition
 class Book:
     def __init__(self, owner_email: str, title: str, author: str, book_type: str, size: int):
@@ -46,6 +42,10 @@ class Book:
         book_metadata = self.__dict__
         collection.insert_one(book_metadata)
         print(f"Book metadata saved to MongoDB with ID: {self.id}")
+
+# Helper function to hash email
+def hash_email(email: str) -> str:
+    return hashlib.sha256(email.encode()).hexdigest()
 
 # Helper function to extract metadata from book
 def extract_metadata(file: BytesIO, type: str):
