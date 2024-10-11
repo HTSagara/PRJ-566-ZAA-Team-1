@@ -63,7 +63,7 @@ export default function LibraryScreen() {
  // Function to pick a PDF or EPUB book file
   const pickBookFile = async () => {
     let result = await DocumentPicker.getDocumentAsync({
-      type: ["application/pdf", "application/epub+zip"],
+      type: ["application/pdf", ".epub"],
       copyToCacheDirectory: true,
     });
 
