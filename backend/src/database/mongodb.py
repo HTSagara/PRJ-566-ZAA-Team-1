@@ -1,4 +1,4 @@
-# src/database/db.py
+# src/database/mongodb.py
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from dotenv import load_dotenv
@@ -8,11 +8,10 @@ load_dotenv()
 MONGODB_DB_PASSWORD = os.getenv("MONGODB_DB_PASSWORD")
 MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME")
 MONGODB_DB_COLLECTION = os.getenv("MONGODB_DB_COLLECTION")
-
-uri = f"mongodb+srv://wordvisionapp:{MONGODB_DB_PASSWORD}@wordvision.1jubm.mongodb.net/?retryWrites=true&w=majority&appName=WordVision"
+URI = os.getenv("MONGODB_URI")
 
 # Create a new client and connect to the server
-client = MongoClient(uri, server_api=ServerApi('1'))
+client = MongoClient(URI, server_api=ServerApi('1'))
 db = client[MONGODB_DB_NAME]
 collection = db[MONGODB_DB_COLLECTION]
 
