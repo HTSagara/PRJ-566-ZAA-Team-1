@@ -1,50 +1,54 @@
 # src/routes/book.py
-from fastapi import APIRouter, HTTPException, File, UploadFile, Form
+from fastapi import APIRouter, HTTPException, UploadFile, Form, Request, status, Depends
 from fastapi.responses import JSONResponse
-from models.book import hash_email
-from models.book import Book
-from database.book_metadata import process_epub
-from database.s3_db import write_file_data
+from auth import auth_middleware, get_user_info
+from database.book_metadata import extract_metadata
+from models.book import Book, extract_metadata
 from io import BytesIO
-import uuid
 
-router = APIRouter()
+from pydantic import BaseModel
+from typing import Annotated, Optional
 
-@router.post("/upload-epub")
-async def upload_epub(file: UploadFile = File(...)):
-    if not file.filename.endswith('.epub'):
-        return JSONResponse(status_code=400, content={"message": "Invalid file type. Only EPUB files are allowed."})
+print(f"hello from book route")
 
-    try:
-        # Read file content
-        file_content = await file.read()
+router = APIRouter(dependencies=[Depends(auth_middleware)])
 
-        # Convert bytes to a file-like object
-        file_stream = BytesIO(file_content)
+class BookFormData(BaseModel):
+    title: Optional[str] = None
+    author: Optional[str] = None
+    file: UploadFile
 
-        # Generate fileId and ownerId (example, you can modify as per your need)
-        file_id = str(uuid.uuid4())
-        owner_id = hash_email("wordvision.app@gmail.com")
+@router.post("/book", tags=["book"])
+async def upload_book(request: Request, data: Annotated[BookFormData, Form()]):
 
-        # Write file data to S3
-        upload_success = write_file_data(file_id, owner_id, file_stream)
-        if not upload_success:
-            raise HTTPException(status_code=500, detail="Failed to upload file to S3")
-        else:
-            print("File uploaded successfully to S3")
+    # Validate uploaded book file
+    file = data.file
+    if file.content_type not in ("application/epub+zip", "application/pdf"):
+        return JSONResponse(status_code=400, content={"message": "Invalid file type. Only EPUB or PDF files are allowed."})
 
-        # Optionally, save the file locally as well
-        file_location = f"/app/uploads/{file.filename}"
-        with open(file_location, "wb") as f:
-            f.write(file_content)
+    # Get user email
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+    access_token = auth_header.split(" ")[1]
+    user_email = get_user_info(access_token)['email']
 
-        # Since process_epub may use seek, reset file stream to the beginning
-        file_stream.seek(0)
+    # Get metadata from file
+    file_stream = BytesIO(await file.read())
+    metadata = extract_metadata(file_stream, file.content_type)
 
-        # Process the file (call process_epub for instance)
-        process_epub(file_location)
+    # Set title and author
+    title = data.title or str(metadata and metadata["title"]) or file.filename or "Unknown"
+    author = data.author or str(metadata and metadata["author"]) or "Unknown"
 
-        return {"info": f"File '{file.filename}' successfully uploaded and saved at '{file_location}'"}
+    # Create book object
+    book = Book(user_email, title, author, file.content_type, file.size or 0) 
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
+    # Upload book file
+    book.setBookContent(file_stream)
+
+    # Upload book metadata
+    book.save()
+
+    return book.get_metadata()
+
