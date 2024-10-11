@@ -18,6 +18,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system'; // This is used to get the file as a blob
 import { Platform } from "react-native";
+import { getUser } from "@/utilities/auth";
 
 // Define the book type
 interface Book {
@@ -34,7 +35,6 @@ export default function LibraryScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [selectedImage, setSelectedImage] = useState<any>(null); // State for Image File
   const [title, setTitle] = useState<string>(""); // State for Title
   const [author, setAuthor] = useState<string>(""); // State for Author
 
@@ -74,20 +74,6 @@ export default function LibraryScreen() {
       console.log("File picking canceled or failed.");
     }
   };
-  // Function to pick an image file
-  const pickImageFile = async () => {
-    let result = await DocumentPicker.getDocumentAsync({
-      type: ["image/*"],
-      copyToCacheDirectory: true,
-    });
-
-    if (result && result.output && result.output.length > 0) {
-      setSelectedImage(result.assets[0]);
-      console.log("Image selected: ", result.assets[0].name);  // Log the image name
-    } else {
-      console.log("Image picking canceled or failed.");
-    }
-  };
   
   // Function to upload the book file with metadata
   const uploadBook = async () => {
@@ -113,32 +99,26 @@ export default function LibraryScreen() {
       // Append metadata
       formData.append("title", title);
       formData.append("author", author);
-  
-      // Check if an image file is selected and convert it to Blob similarly
-      if (selectedImage) {
-        const imageBlob = await fetch(selectedImage.uri)
-          .then((response) => response.blob())
-          .catch((error) => {
-            console.error("Error converting image to blob:", error);
-            return null;
-          });
-  
-        if (imageBlob) {
-          formData.append("image", imageBlob, selectedImage.name);
-        }
-      }
       
       //console log
       for (let [key, value] of formData.entries()) {
         console.log(`${key}:`, value);
       }
 
+      const user = await getUser();
+      if (!user) {
+        Alert.alert("Error", "No user was found");
+        console.info("No user was found");
+        return;
+      }
+
+
       try {
         const response = await fetch("http://localhost:8000/book", {
           method: "POST",
           body: formData,
           headers: {
-            "Content-Type": "multipart/form-data", // Ensure multipart form data
+            "Authorization": `Bearer ${user.accessToken}`,
           },
         });
   
@@ -153,7 +133,6 @@ export default function LibraryScreen() {
       } finally {
         setModalVisible(false);
         setSelectedFile(null); // Reset selected file after upload
-        setSelectedImage(null); // Reset selected image
         setTitle(""); // Reset title
         setAuthor(""); // Reset author
       }
@@ -223,10 +202,6 @@ export default function LibraryScreen() {
               style={styles.input}
             />
 
-            {/* Pick an Image */}
-            <Button title="Pick a Book Cover" onPress={pickImageFile} />
-            {selectedImage && <Text>Selected Book Cover: {selectedImage.name}</Text>}
-            <br></br>
             {/* Pick a Book File */}
             <Button title="Pick a File" onPress={pickBookFile} />
             {selectedFile && <Text>Selected File: {selectedFile.name}</Text>}
