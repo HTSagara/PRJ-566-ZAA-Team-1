@@ -43,6 +43,20 @@ class Book:
         collection.insert_one(book_metadata)
         print(f"Book metadata saved to MongoDB with ID: {self.id}")
 
+    def get_metadata(self):
+        metadata = { 
+            "id": self.id,
+            "ownerId": self.ownerId,
+            "created": self.created,
+            "updated": self.updated,
+            "type": self.type,
+            "size": self.size,
+            "title": self.title,
+            "author": self.author,
+            "imgUrl": self.imgUrl
+        }
+        return metadata
+
 # Helper function to hash email
 def hash_email(email: str) -> str:
     return hashlib.sha256(email.encode()).hexdigest()
