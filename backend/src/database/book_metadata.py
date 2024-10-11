@@ -36,5 +36,5 @@ def process_epub(epub_path):
     save_metadata_to_mongodb(metadata)
 
 # Example usage
-epub_file_path = "/app/src/epubs/poe-balloon-hoax-illustrations.epub"
-process_epub(epub_file_path)
+# epub_file_path = "/app/src/epubs/poe-balloon-hoax-illustrations.epub"
+# process_epub(epub_file_path)
