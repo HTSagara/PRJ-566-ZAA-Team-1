@@ -5,13 +5,16 @@ from datetime import datetime, timezone
 from urllib.parse import urlencode
 from dotenv import load_dotenv
 from urllib.parse import urlencode
+from database.mongodb import db_connection
+from routes import book
 import requests
 import os
 
-from .auth import auth_middleware
-from .routes import user
+from auth import auth_middleware
+from routes import user
 
 load_dotenv()
+
 
 COGNITO_CLIENT_ID = os.getenv("COGNITO_CLIENT_ID")
 COGNITO_DOMAIN = os.getenv("COGNITO_DOMAIN")
@@ -33,6 +36,7 @@ app.include_router(user.router)
 # Public Route Example (no authentication required)
 @app.get("/public")
 async def public_route():
+    db_connection()
     return { "message": "This is a public route. No authentication needed." }
 
 # Protected Route Example
@@ -94,3 +98,5 @@ async def callback(code: str|None = None):
         return {"id_token": id_token, "access_token": access_token, "expires_in": expires_in}  # Return both tokens
 
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to exchange code for tokens")
+
+app.include_router(book.router)
