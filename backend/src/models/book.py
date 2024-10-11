@@ -4,6 +4,7 @@ from io import BytesIO
 import hashlib
 import uuid
 import os
+import pymupdf
 from datetime import datetime
 from dotenv import load_dotenv
 from database.mongodb import db
@@ -46,3 +47,7 @@ class Book:
         collection.insert_one(book_metadata)
         print(f"Book metadata saved to MongoDB with ID: {self.id}")
 
+# Helper function to extract metadata from book
+def extract_metadata(file: BytesIO, type: str):
+    doc = pymupdf.open(stream=file, filetype=type)
+    return doc.metadata
