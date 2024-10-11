@@ -1,0 +1,19 @@
+name: wordvision
+
+services:
+
+  backend:
+    container_name: backend
+    init: true # Use a proper init process (tini)
+    build: ./backend/
+    env_file: ./backend/.env
+    ports:
+      - '8000:8000'
+
+  frontend:
+    container_name: frontend
+    init: true # Use a proper init process (tini)
+    build: ./frontend/
+    env_file: ./frontend/.env
+    ports:
+      - '8081:8081'

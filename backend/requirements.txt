@@ -4,3 +4,7 @@ python-dotenv
 python-jose
 requests
 boto3
+pymongo[srv]
+ebooklib
+python-multipart
+pymupdf
