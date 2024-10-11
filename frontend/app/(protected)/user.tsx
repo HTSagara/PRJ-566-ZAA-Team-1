@@ -19,6 +19,7 @@ interface UserInfo {
 export default function user() {
   const backendApiUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
 
+  const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [birthdate, setBirthdate] = useState("");
@@ -59,6 +60,8 @@ export default function user() {
       } catch (err) {
         console.error("Unable to call GET /user", { err });
       }
+
+      setLoading(false);
     }
 
     init();
@@ -151,87 +154,96 @@ export default function user() {
           User Profile
         </ThemedText>
 
-        <View style={styles.inputContainer}>
-          <ThemedText type="default">Email</ThemedText>
-          <ThemedTextInput
-            style={styles.input}
-            onChangeText={setEmail}
-            value={email}
-            editable={false}
-          />
-          <ThemedText type="default">Name</ThemedText>
-          <ThemedTextInput
-            style={styles.input}
-            onChangeText={setName}
-            value={name}
-            editable={editMode}
-          />
-          <ThemedText type="default">Birthdate</ThemedText>
-          <ThemedTextInput
-            style={styles.input}
-            onChangeText={setBirthdate}
-            value={birthdate}
-            editable={editMode}
-          />
-        </View>
+        {loading ? 
+          <View style={styles.inputContainer}>
+            <ThemedText type="default">Loading user info...</ThemedText>
+          </View>
+          : 
+          <>
+            <View style={styles.inputContainer}>
+              <ThemedText type="default">Email</ThemedText>
+              <ThemedTextInput
+                style={styles.input}
+                onChangeText={setEmail}
+                value={email}
+                editable={false}
+              />
+              <ThemedText type="default">Name</ThemedText>
+              <ThemedTextInput
+                style={styles.input}
+                onChangeText={setName}
+                value={name}
+                editable={editMode}
+              />
+              <ThemedText type="default">Birthdate</ThemedText>
+              <ThemedTextInput
+                style={styles.input}
+                onChangeText={setBirthdate}
+                value={birthdate}
+                editable={editMode}
+              />
+            </View>
 
-        <View style={styles.buttonContainer}>
-          {editMode ? (
-            <>
-              <ThemedButton
-                style={styles.button}
-                lightFg="white"
-                lightBg="rgb(34 197 94)"
-                darkFg="white"
-                darkBg="rgb(21 128 61)"
-                title="Save"
-                onPress={handleSave}
-              />
-              <ThemedButton
-                style={styles.button}
-                lightFg="white"
-                lightBg="rgb(185 28 28)"
-                darkFg="rgb(254 226 226)"
-                darkBg="rgb(248 113 113)"
-                title="Cancel"
-                onPress={handleCancel}
-              />
-            </>
-          ) : (
-            <ThemedButton
-              style={styles.button}
-              lightFg="white"
-              lightBg="rgb(34 197 94)"
-              darkFg="white"
-              darkBg="rgb(21 128 61)"
-              title="Edit"
-              onPress={() => setEditMode(true)}
-            />
-          )}
+            <View style={styles.buttonContainer}>
+              {editMode ? (
+                <>
+                  <ThemedButton
+                    style={styles.button}
+                    lightFg="white"
+                    lightBg="rgb(34 197 94)"
+                    darkFg="white"
+                    darkBg="rgb(21 128 61)"
+                    title="Save"
+                    onPress={handleSave}
+                  />
+                  <ThemedButton
+                    style={styles.button}
+                    lightFg="white"
+                    lightBg="rgb(185 28 28)"
+                    darkFg="rgb(254 226 226)"
+                    darkBg="rgb(248 113 113)"
+                    title="Cancel"
+                    onPress={handleCancel}
+                  />
+                </>
+              ) : (
+                <ThemedButton
+                  style={styles.button}
+                  lightFg="white"
+                  lightBg="rgb(34 197 94)"
+                  darkFg="white"
+                  darkBg="rgb(21 128 61)"
+                  title="Edit"
+                  onPress={() => setEditMode(true)}
+                />
+              )}
 
-          {!editMode && (
-            <>
-              <ThemedButton
-                style={styles.button}
-                lightFg="white"
-                lightBg="rgb(34 197 94)"
-                darkFg="white"
-                darkBg="rgb(21 128 61)"
-                title="Log Out"
-                onPress={() => Auth.signOut()}
-              />
-              <ThemedButton
-                style={styles.button}
-                lightFg="white"
-                lightBg="rgb(185 28 28)"
-                darkFg="rgb(254 226 226)"
-                darkBg="rgb(248 113 113)"
-                title="Delete"
-                onPress={handleDelete}
-              />
-            </>
-          )}
-        </View>
+              {!editMode && (
+                <>
+                  <ThemedButton
+                    style={styles.button}
+                    lightFg="white"
+                    lightBg="rgb(34 197 94)"
+                    darkFg="white"
+                    darkBg="rgb(21 128 61)"
+                    title="Log Out"
+                    onPress={() => Auth.signOut()}
+                  />
+                  <ThemedButton
+                    style={styles.button}
+                    lightFg="white"
+                    lightBg="rgb(185 28 28)"
+                    darkFg="rgb(254 226 226)"
+                    darkBg="rgb(248 113 113)"
+                    title="Delete"
+                    onPress={handleDelete}
+                  />
+                </>
+              )}
+            </View>
+          </>
+        }
+
       </ThemedView>
     </ParallaxScrollView>
   );
