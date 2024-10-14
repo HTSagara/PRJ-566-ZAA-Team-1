@@ -3,7 +3,8 @@ from fastapi import APIRouter, HTTPException, UploadFile, Form, Request, status,
 from fastapi.responses import JSONResponse
 from auth import auth_middleware, get_user_info
 from database.book_metadata import extract_metadata
-from models.book import Book, extract_metadata
+from database.mongodb import get_mongodb_collection
+from models.book import Book, extract_metadata, hash_email
 from io import BytesIO
 
 from pydantic import BaseModel
@@ -51,4 +52,28 @@ async def upload_book(request: Request, data: Annotated[BookFormData, Form()]):
     book.save()
 
     return book.get_metadata()
+
+# GET /books - Retrieve Books Metadata API
+@router.get("/books", tags=["book"])
+async def retrieve_books(request: Request):
+    # Get user email from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+    access_token = auth_header.split(" ")[1]
+    user_email = get_user_info(access_token)['email']
+
+    # Hash the user's email to match the collection name (ownerId)
+    owner_id = hash_email(user_email)  # using already defined function to hash the email
+
+    # Retrieve books from MongoDB based on the owner's hashed email
+    collection = get_mongodb_collection(owner_id)
+    books = list(collection.find({}, {'_id': 0}))  # Fetch all books for the user and exclude the MongoDB _id field
+
+    if not books:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No books found for this user")
+
+    return books
+
+
 

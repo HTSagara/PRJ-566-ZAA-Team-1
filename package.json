@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@aws-amplify/api": "^6.0.53",
+    "@aws-amplify/auth": "^6.5.1",
+    "@aws-amplify/core": "^6.4.4",
+    "@aws-amplify/datastore": "^5.0.53"
+  }
+}
