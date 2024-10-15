@@ -1,10 +1,11 @@
 # src/routes/book.py
 from fastapi import APIRouter, HTTPException, UploadFile, Form, Request, status, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from auth import auth_middleware, get_user_info
 from database.book_metadata import extract_metadata
 from database.mongodb import get_mongodb_collection
 from models.book import Book, extract_metadata, hash_email
+from database.s3_db import read_file_data
 from io import BytesIO
 
 from pydantic import BaseModel
@@ -75,5 +76,25 @@ async def retrieve_books(request: Request):
 
     return books
 
+@router.get("/book/{book_id}", tags=["book"])
+async def download_book(request: Request, book_id: str):
+    # Get user email from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+    access_token = auth_header.split(" ")[1]
+    user_email = get_user_info(access_token)['email']
 
+    # Hash the user's email to match the collection name (ownerId)
+    owner_id = hash_email(user_email)  # using already defined function to hash the email
 
+    # S3 key where the book file is stored
+    s3_key = f"{owner_id}/{book_id}"
+
+    # Read the file content from S3
+    book_file = read_file_data(s3_key)
+    if book_file is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found in S3")
+    
+    # Return the file as a StreamingResponse
+    return StreamingResponse(BytesIO(book_file), media_type="application/octet-stream", headers={"Content-Disposition": f"attachment; filename={book_id}"})

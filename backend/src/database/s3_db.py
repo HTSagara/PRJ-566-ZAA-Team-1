@@ -30,3 +30,16 @@ def write_file_data(key: str, file_type: str, data: BytesIO):
     except ClientError as e:
         print(f"Unexpected error occurred: {e}")
         return False
+
+def read_file_data(key: str):
+    try: 
+        # Download the file from S3 into memory
+        response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=key)
+        file_data = response['Body'].read()
+        return file_data
+    except NoCredentialsError:
+        print("Credentials not available")
+        return None
+    except ClientError as e:
+        print(f"Error retrieving file from S3: {e}")
+        return None
