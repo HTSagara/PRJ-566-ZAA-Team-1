@@ -73,8 +73,9 @@ async def retrieve_books(request: Request):
     if not books:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No books found for this user")
 
-    # Rename _id to id in the metadata after fetching
-    books["id"] = str(books.pop("_id"))
+    # Rename '_id' to 'id' in the response for each book
+    for book in books:
+        book['id'] = str(book.pop('_id'))
 
     return books
 
