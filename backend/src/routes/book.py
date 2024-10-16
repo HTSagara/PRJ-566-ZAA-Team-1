@@ -84,6 +84,7 @@ async def download_book(request: Request, book_id: str):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
     access_token = auth_header.split(" ")[1]
     user_email = get_user_info(access_token)['email']
+    
 
     # Hash the user's email to match the collection name (ownerId)
     owner_id = hash_email(user_email)  # using already defined function to hash the email
@@ -93,6 +94,8 @@ async def download_book(request: Request, book_id: str):
 
     # Read the file content from S3
     book_file = read_file_data(s3_key)
+
+    print(f"Book downloaded successfully: {book_id}")
     if book_file is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found in S3")
     
