@@ -1,3 +1,4 @@
+// app/(protected)/(tabs)/library.tsx
 import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
@@ -14,7 +15,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { getUser } from "@/utilities/auth";
 import { RootStackParamList } from "./types"; // Import your defined types
-import { StackNavigationProp } from "@react-navigation/stack"; // Import the navigation prop types
+import { StackNavigationProp } from "@react-navigation/stack";
 
 // Define the book type
 interface Book {
@@ -31,10 +32,8 @@ export default function LibraryScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
-  // Explicitly type the navigation object
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  // Fetch book data from the API
   useEffect(() => {
     const fetchBooks = async () => {
       try {
@@ -69,9 +68,9 @@ export default function LibraryScreen() {
     fetchBooks();
   }, []);
 
-  // Function to navigate to BookReader with the selected book ID
   const handleBookPress = (bookId: string) => {
-    navigation.navigate("bookReader", { bookId }); // Correctly typed navigation
+    console.log("Selected book id: " + bookId);
+    navigation.navigate("bookReader", { bookId });
   };
 
   if (loading) {
@@ -94,12 +93,11 @@ export default function LibraryScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Book cards list */}
       <FlatList
         data={books}
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => handleBookPress(item.id)} // Navigate to bookReader screen
+            onPress={() => handleBookPress(item.id)}
             style={styles.cardContainer}
           >
             <View style={styles.card}>
@@ -120,7 +118,6 @@ export default function LibraryScreen() {
         numColumns={5}
       />
 
-      {/* Modal for file upload */}
       <Modal
         animationType="slide"
         transparent={true}

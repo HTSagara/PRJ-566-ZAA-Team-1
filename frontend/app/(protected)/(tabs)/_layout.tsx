@@ -1,3 +1,4 @@
+// app/(protected)/(tabs)/_layout.tsx
 import { Tabs } from "expo-router";
 import React from "react";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
@@ -14,8 +15,9 @@ export default function TabLayout() {
         headerShown: false,
       }}
     >
+      {/* Let the routing system handle file-based screens */}
       <Tabs.Screen
-        name="library"
+        name="library" // This points to app/library/index.tsx
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
