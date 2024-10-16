@@ -68,7 +68,7 @@ async def retrieve_books(request: Request):
 
     # Retrieve books from MongoDB based on the owner's hashed email
     collection = get_mongodb_collection(owner_id)
-    books = list(collection.find({}, {'_id': 0}))  # Fetch all books for the user and exclude the MongoDB _id field
+    books = list(collection.find({}))  # Fetch all books for the user and exclude the MongoDB _id field
 
     if not books:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No books found for this user")
@@ -94,5 +94,8 @@ async def get_book_info(request: Request, book_id: str):
 
     if not book_metadata:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
+
+    # Rename _id to id in the metadata after fetching
+    book_metadata["id"] = str(book_metadata.pop("_id"))
 
     return JSONResponse(content=book_metadata)
