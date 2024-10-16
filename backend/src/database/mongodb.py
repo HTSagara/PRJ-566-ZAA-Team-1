@@ -25,3 +25,10 @@ def db_connection():
     except Exception as e:
         print(e)
         return False
+    
+def get_mongodb_collection(ownerId: str):
+    try:
+        return db[ownerId]  # Return the collection using the hashed email as the collection name
+    except Exception as e:
+        print(f"Error retrieving collection for ownerId {ownerId}: {e}")
+        raise Exception(f"Could not retrieve collection for ownerId: {ownerId}")
