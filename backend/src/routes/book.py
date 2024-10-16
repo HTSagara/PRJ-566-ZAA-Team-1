@@ -6,7 +6,6 @@ from database.book_metadata import extract_metadata
 from database.mongodb import get_mongodb_collection
 from models.book import Book, extract_metadata, hash_email
 from io import BytesIO
-from bson import ObjectId
 
 from pydantic import BaseModel
 from typing import Annotated, Optional
@@ -79,10 +78,6 @@ async def retrieve_books(request: Request):
 # GET /book/info/{id}
 @router.get("/book/info/{book_id}", tags=["book"])
 async def get_book_info(request: Request, book_id: str):
-    # Validate UUID format for book_id
-    if not ObjectId.is_valid(book_id):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid book UUID")
-
     # Get user email from Authorization header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -90,12 +85,12 @@ async def get_book_info(request: Request, book_id: str):
     access_token = auth_header.split(" ")[1]
     user_email = get_user_info(access_token)['email']
 
-    # Hash user's email to match the collection name
+    # Hash user's email to match collection name
     owner_id = hash_email(user_email)
 
-    # Retrieve book metadata from MongoDB based on user's hashed email and book UUID
+    # Retrieve the book metadata from MongoDB based on user's hashed email and the UUID field
     collection = get_mongodb_collection(owner_id)
-    book_metadata = collection.find_one({"_id": ObjectId(book_id)}, {'_id': 0})  # Exclude MongoDB _id field
+    book_metadata = collection.find_one({"id": book_id}, {'_id': 0})
 
     if not book_metadata:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
