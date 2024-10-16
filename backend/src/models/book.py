@@ -39,7 +39,8 @@ class Book:
         # Save the book metadata to MongoDB
         self.updated = datetime.now().isoformat()
         collection = db[self.ownerId]
-        book_metadata = self.__dict__
+        book_metadata = self.get_metadata()
+        book_metadata["_id"] = book_metadata.pop("id", "not found")
         collection.insert_one(book_metadata)
         print(f"Book metadata saved to MongoDB with ID: {self.id}")
 

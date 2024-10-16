@@ -68,12 +68,38 @@ async def retrieve_books(request: Request):
 
     # Retrieve books from MongoDB based on the owner's hashed email
     collection = get_mongodb_collection(owner_id)
-    books = list(collection.find({}, {'_id': 0}))  # Fetch all books for the user and exclude the MongoDB _id field
+    books = list(collection.find({}))  # Fetch all books for the user
 
     if not books:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No books found for this user")
 
+    # Rename '_id' to 'id' in the response for each book
+    for book in books:
+        book['id'] = str(book.pop('_id'))
+
     return books
 
+# GET /book/info/{id}
+@router.get("/book/info/{book_id}", tags=["book"])
+async def get_book_info(request: Request, book_id: str):
+    # Get user email from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+    access_token = auth_header.split(" ")[1]
+    user_email = get_user_info(access_token)['email']
 
+    # Hash user's email to match collection name
+    owner_id = hash_email(user_email)
 
+    # Retrieve the book metadata from MongoDB based on user's hashed email and the UUID field
+    collection = get_mongodb_collection(owner_id)
+    book_metadata = collection.find_one({"_id": book_id})
+
+    if not book_metadata:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
+
+    # Rename _id to id in the metadata after fetching
+    book_metadata["id"] = str(book_metadata.pop("_id"))
+
+    return JSONResponse(content=book_metadata)
