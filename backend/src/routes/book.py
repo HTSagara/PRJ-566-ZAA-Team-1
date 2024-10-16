@@ -90,7 +90,7 @@ async def get_book_info(request: Request, book_id: str):
 
     # Retrieve the book metadata from MongoDB based on user's hashed email and the UUID field
     collection = get_mongodb_collection(owner_id)
-    book_metadata = collection.find_one({"id": book_id}, {'_id': 0})
+    book_metadata = collection.find_one({"_id": book_id}, {'_id': 0})
 
     if not book_metadata:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
