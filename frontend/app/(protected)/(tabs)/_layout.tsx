@@ -11,7 +11,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
-        headerShown: false, // Disable header for all tabs by default
+        headerShown: false,
       }}
     >
       <Tabs.Screen
