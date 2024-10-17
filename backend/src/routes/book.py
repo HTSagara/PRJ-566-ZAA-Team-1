@@ -7,11 +7,19 @@ from database.mongodb import get_mongodb_collection
 from models.book import Book, extract_metadata, hash_email
 from database.s3_db import read_file_data
 from io import BytesIO
+import boto3
+from botocore.exceptions import NoCredentialsError
+from dotenv import load_dotenv
+import os
 
 from pydantic import BaseModel
 from typing import Annotated, Optional
 
 print(f"hello from book route")
+
+load_dotenv()
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+s3_client = boto3.client('s3')
 
 router = APIRouter(dependencies=[Depends(auth_middleware)])
 
@@ -19,6 +27,9 @@ class BookFormData(BaseModel):
     title: Optional[str] = None
     author: Optional[str] = None
     file: UploadFile
+
+# Define S3 client outside the route for reuse
+s3 = boto3.client('s3')
 
 @router.post("/book", tags=["book"])
 async def upload_book(request: Request, data: Annotated[BookFormData, Form()]):
@@ -108,27 +119,28 @@ async def get_book_info(request: Request, book_id: str):
 
   
 @router.get("/book/{book_id}", tags=["book"])
-async def download_book(request: Request, book_id: str):
-  # Get user email from Authorization header
+async def get_book_presigned_url(request: Request, book_id: str):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+
     access_token = auth_header.split(" ")[1]
     user_email = get_user_info(access_token)['email']
-        
+    owner_id = hash_email(user_email)  # Hash the user's email to get the S3 folder name
 
-    # Hash the user's email to match the collection name (ownerId)
-    owner_id = hash_email(user_email)  # using already defined function to hash the email
-
-    # S3 key where the book file is stored
+    # Define the S3 key for the book file
     s3_key = f"{owner_id}/{book_id}"
 
-    # Read the file content from S3
-    book_file = read_file_data(s3_key)
+    try:
+        # Generate a pre-signed URL for the S3 object
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': S3_BUCKET_NAME, 'Key': s3_key},
+            ExpiresIn=3600  # URL will expire in 1 hour
+        )
+        return {"url": presigned_url}
 
-    print(f"Book downloaded successfully: {book_id}")
-    if book_file is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found in S3")
-    
-    # Return the file as a StreamingResponse
-    return StreamingResponse(BytesIO(book_file), media_type="application/octet-stream", headers={"Content-Disposition": f"attachment; filename={book_id}"})
+    except NoCredentialsError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="S3 credentials are missing or invalid")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

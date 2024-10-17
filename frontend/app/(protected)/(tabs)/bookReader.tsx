@@ -38,10 +38,8 @@ const BookReader: React.FC = () => {
         });
 
         if (response.ok) {
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          console.log("Blob URL:", url);
-          setBookUrl(url); // Set the book URL once the Blob is created
+          const data = await response.json();
+          setBookUrl(data.url); // Set the pre-signed URL returned from the backend
         } else {
           console.error("Error fetching book:", response.statusText);
           setError("Failed to fetch book.");
@@ -50,12 +48,12 @@ const BookReader: React.FC = () => {
         console.error("Error fetching book:", error);
         setError("Error fetching book.");
       } finally {
-        setLoading(false); // Stop loading once fetch is done
+        setLoading(false);
       }
     };
 
     fetchBookUrl();
-  }, [bookId]); // Only re-run when bookId changes (remove `location` from dependencies)
+  }, [bookId]);
 
   // Show loading indicator while fetching
   if (loading) {
