@@ -99,7 +99,9 @@ export default function LibraryScreen() {
         data={books}
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => handleBookPress(item.id)} // Navigate to bookReader screen
+          onPress={() => {
+            navigation.navigate("bookdetails", { bookId: item.id }); // Correctly pass bookId
+          }} // Navigate to bookReader screen
             style={styles.cardContainer}
           >
             <View style={styles.card}>
