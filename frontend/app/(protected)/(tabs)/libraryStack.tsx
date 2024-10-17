@@ -1,8 +1,9 @@
 // app/(protected)/(tabs)/libraryStack.tsx
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import LibraryScreen from "./library"; // Assuming library.tsx is in the same folder
-import BookReader from "./bookReader"; // Assuming bookReader.tsx is in the same folder
+import LibraryScreen from "./library";
+import BookReader from "./bookReader";
+import BookDetailsScreen from "./bookdetails";
 
 const Stack = createStackNavigator();
 
@@ -15,7 +16,13 @@ export default function LibraryStack() {
         component={LibraryScreen}
         options={{ headerShown: false }}
       />
-      {/* Detailed BookReader Screen */}
+      {/* Book Details Screen */}
+      <Stack.Screen
+        name="bookdetails"
+        component={BookDetailsScreen}
+        options={{ title: "Book Details" }}
+      />
+      {/* Book Reader Screen */}
       <Stack.Screen
         name="bookReader"
         component={BookReader}

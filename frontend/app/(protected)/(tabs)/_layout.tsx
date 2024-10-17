@@ -15,9 +15,9 @@ export default function TabLayout() {
         headerShown: false,
       }}
     >
-      {/* Let the routing system handle file-based screens */}
+      {/* Library Tab */}
       <Tabs.Screen
-        name="library" // This points to app/library/index.tsx
+        name="library"
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
@@ -26,6 +26,15 @@ export default function TabLayout() {
               color={color}
             />
           ),
+        }}
+      />
+
+      {/* Book Details Tab (hidden from Tab bar) */}
+      <Tabs.Screen
+        name="bookdetails"
+        options={{
+          tabBarButton: () => null, // Hides the tab button
+          headerShown: false,
         }}
       />
     </Tabs>
