@@ -26,6 +26,14 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="bookdetails"
+        options={{
+          tabBarButton: () => null,
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
     </Tabs>
   );
 }
