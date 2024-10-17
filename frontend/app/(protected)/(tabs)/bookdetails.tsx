@@ -8,22 +8,34 @@ import {
   StyleSheet,
   TextInput,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { getUser } from "@/utilities/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "./types";
+
+// Define the types for the book object and route params
+interface Book {
+  title: string;
+  author: string;
+  imgUrl?: string;
+  type: string;
+  size: number;
+}
 
 export default function BookDetailsScreen() {
-  const [book, setBook] = useState(null);
+  const [book, setBook] = useState<Book | null>(null); // Properly typed book state
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const [isStarred, setIsStarred] = useState(false);
   const [isClocked, setIsClocked] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
 
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { bookId } = route.params;
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  // Use route params with proper typing
+  const route = useRoute<RouteProp<RootStackParamList, "bookReader">>();
+  const { bookId } = route.params; // Now TypeScript understands bookId
 
   // Load saved icons and notes from AsyncStorage when page is loaded
   useEffect(() => {
@@ -89,7 +101,7 @@ export default function BookDetailsScreen() {
     return <Text>No book details available</Text>;
   }
 
-  const formatFileSize = (size) => {
+  const formatFileSize = (size: number) => {
     if (size >= 1048576) {
       return `${(size / 1048576).toFixed(2)} MB`;
     } else if (size >= 1024) {
@@ -99,7 +111,7 @@ export default function BookDetailsScreen() {
   };
 
   // Save notes to AsyncStorage
-  const handleNotesChange = async (text) => {
+  const handleNotesChange = async (text: string) => {
     setNotes(text);
     try {
       await AsyncStorage.setItem(`notes_${bookId}`, text); // Save notes with `notes_<bookId>`
@@ -136,7 +148,9 @@ export default function BookDetailsScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>About Document</Text>
         <TouchableOpacity
-          onPress={() => Alert.alert("Read", "Read button pressed")}
+          onPress={() => {
+            navigation.navigate("bookReader", { bookId });
+          }}
         >
           <Text style={styles.readButton}>Read</Text>
         </TouchableOpacity>

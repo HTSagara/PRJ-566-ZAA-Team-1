@@ -29,9 +29,30 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Book Details Tab (hidden from Tab bar) */}
+      {/*Hidden tabs*/}
       <Tabs.Screen
         name="bookdetails"
+        options={{
+          tabBarButton: () => null, // Hides the tab button
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="bookReader"
+        options={{
+          tabBarButton: () => null, // Hides the tab button
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="libraryStack"
+        options={{
+          tabBarButton: () => null, // Hides the tab button
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="types"
         options={{
           tabBarButton: () => null, // Hides the tab button
           headerShown: false,

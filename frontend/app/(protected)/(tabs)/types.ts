@@ -1,5 +1,6 @@
 // src/types.ts
 export type RootStackParamList = {
   library: undefined; // No params for library
-  bookReader: { bookId: string }; // Params for bookReader screen
+  bookdetails: { bookId: string };
+  bookReader: { bookId: string };
 };

@@ -22,7 +22,6 @@ export default function LibraryStack() {
         component={BookDetailsScreen}
         options={{ title: "Book Details" }}
       />
-      {/* Book Reader Screen */}
       <Stack.Screen
         name="bookReader"
         component={BookReader}
