@@ -69,11 +69,6 @@ export default function LibraryScreen() {
     fetchBooks();
   }, []);
 
-  // Function to navigate to BookReader with the selected book ID
-  const handleBookPress = (bookId: string) => {
-    navigation.navigate("bookReader", { bookId }); // Correctly typed navigation
-  };
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -101,7 +96,7 @@ export default function LibraryScreen() {
           <TouchableOpacity
           onPress={() => {
             navigation.navigate("bookdetails", { bookId: item.id }); // Correctly pass bookId
-          }} // Navigate to bookReader screen
+          }}
             style={styles.cardContainer}
           >
             <View style={styles.card}>
