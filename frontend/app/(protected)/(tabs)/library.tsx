@@ -4,6 +4,7 @@ import {
   Image,
   TouchableOpacity,
   Text,
+  TextInput,
   View,
   FlatList,
   ActivityIndicator,
@@ -12,11 +13,13 @@ import {
   Button,
   Alert,
 } from "react-native";
-import * as DocumentPicker from 'expo-document-picker';
 import { useNavigation } from "@react-navigation/native";
 import { getUser } from "@/utilities/auth";
 import { RootStackParamList } from "./types"; // Import your defined types
-import { StackNavigationProp } from "@react-navigation/stack"; // Import the navigation prop types
+import { StackNavigationProp } from "@react-navigation/stack";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system"; // This is used to get the file as a blob
+import { Platform } from "react-native";
 
 // Define the book type
 interface Book {
@@ -29,13 +32,11 @@ interface Book {
 const { width } = Dimensions.get("window");
 
 export default function LibraryScreen() {
-
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
 
-  // Explicitly type the navigation object
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   const pickBookFile = async () => {
@@ -46,14 +47,18 @@ export default function LibraryScreen() {
 
     if (result && result.output && result.output.length > 0) {
       setSelectedFile(result.assets[0]);
-      console.log("File selected: ", result.assets[0].name);  // Log the file name
+      console.log("File selected: ", result.assets[0].name); // Log the file name
     } else {
       console.log("File picking canceled or failed.");
     }
   };
 
   const uploadBook = async () => {
-    if (selectedFile && (selectedFile.name.endsWith(".pdf") || selectedFile.name.endsWith(".epub"))) {
+    if (
+      selectedFile &&
+      (selectedFile.name.endsWith(".pdf") ||
+        selectedFile.name.endsWith(".epub"))
+    ) {
       const formData = new FormData();
 
       // Convert the file URI to a Blob using fetch
@@ -95,27 +100,21 @@ export default function LibraryScreen() {
 
         if (response.status === 200) {
           Alert.alert("Success", "Book uploaded successfully!");
-        } 
-        else {
+        } else {
           Alert.alert("Error", "Failed to upload book");
         }
-      } 
-      catch (error) {
+      } catch (error) {
         console.error("Error uploading book:", error);
         Alert.alert("Error", "An error occurred during upload.");
-      } 
-      finally {
+      } finally {
         setModalVisible(false);
         setSelectedFile(null); // Reset selected file after upload
       }
-    } 
-    else {
+    } else {
       Alert.alert("Invalid file", "Please select a valid PDF or EPUB file.");
     }
   };
 
-
-  // Fetch book data from the API
   useEffect(() => {
     const fetchBooks = async () => {
       try {
@@ -175,9 +174,9 @@ export default function LibraryScreen() {
         data={books}
         renderItem={({ item }) => (
           <TouchableOpacity
-          onPress={() => {
-            navigation.navigate("bookdetails", { bookId: item.id }); // Correctly pass bookId
-          }}
+            onPress={() => {
+              navigation.navigate("bookdetails", { bookId: item.id }); // Navigate to book details
+            }}
             style={styles.cardContainer}
           >
             <View style={styles.card}>
@@ -203,12 +202,13 @@ export default function LibraryScreen() {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalView}>
             <Text style={styles.modalText}>Upload a Book (PDF or EPUB)</Text>
-
             {/* Pick a Book File */}
             <Button title="Pick a File" onPress={pickBookFile} />
             {selectedFile && <Text>Selected File: {selectedFile.name}</Text>}
@@ -235,6 +235,14 @@ export default function LibraryScreen() {
 }
 
 const styles = StyleSheet.create({
+  input: {
+    height: 40,
+    borderColor: "gray",
+    borderWidth: 1,
+    marginBottom: 12,
+    paddingHorizontal: 10,
+    width: "100%",
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -306,7 +314,7 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 12,
     textAlign: "center",
-  }, 
+  },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
