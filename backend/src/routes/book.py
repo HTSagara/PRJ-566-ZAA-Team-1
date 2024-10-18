@@ -5,7 +5,7 @@ from auth import auth_middleware, get_user_info
 from database.book_metadata import extract_metadata
 from database.mongodb import get_mongodb_collection
 from models.book import Book, extract_metadata, hash_email
-from database.s3_db import read_file_data
+from database.s3_db import delete_file_data, read_file_data
 from io import BytesIO
 import boto3
 from botocore.exceptions import NoCredentialsError
@@ -166,7 +166,7 @@ async def delete_book(request: Request, book_id: str):
         print(f"Book with ID {book_id} successfully deleted.")
 
         # S3 key where the book file is stored
-        s3_key = f"{owner_id}/{book_id}"
+        s3_key = f"{ownerId}/{book_id}"
     
         # Now deleing book from AWS s3
         response = delete_file_data(s3_key)
