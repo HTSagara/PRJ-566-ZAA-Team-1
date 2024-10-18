@@ -144,3 +144,40 @@ async def get_book_presigned_url(request: Request, book_id: str):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="S3 credentials are missing or invalid")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+# Delete route for book
+@router.delete("/book/{book_id}", tags=["book"])
+async def delete_book(request: Request, book_id: str):
+    # Get user email from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+    access_token = auth_header.split(" ")[1]
+    user_email = get_user_info(access_token)['email']
+
+    # Hash the user's email to match the collection name (ownerId)
+    ownerId = hash_email(user_email)
+    
+    # Deleting the book metadata from mongodb
+    collection = get_mongodb_collection(ownerId)
+    result = collection.delete_one({"_id": book_id})
+
+    if result.deleted_count > 0:
+        print(f"Book with ID {book_id} successfully deleted.")
+
+        # S3 key where the book file is stored
+        s3_key = f"{owner_id}/{book_id}"
+    
+        # Now deleing book from AWS s3
+        response = delete_file_data(s3_key)
+
+        # Step 3: Check S3 deletion result
+        if response:
+            print(f"Book file {s3_key} successfully deleted from S3.")
+            return True  
+        else:
+            print(f"Error deleting book file {s3_key} from S3.")
+            return False  
+    else:
+        print(f"Error Deleting File metaData {book_id}.")
+        return False
