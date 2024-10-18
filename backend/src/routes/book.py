@@ -174,10 +174,10 @@ async def delete_book(request: Request, book_id: str):
         # Step 3: Check S3 deletion result
         if response:
             print(f"Book file {s3_key} successfully deleted from S3.")
-            return True  
+            return JSONResponse(content="Book successfully deleted.") 
         else:
             print(f"Error deleting book file {s3_key} from S3.")
-            return False  
+            return JSONResponse(content="Error Deleting book's data.")  
     else:
         print(f"Error Deleting File metaData {book_id}.")
-        return False
+        return JSONResponse(content="Error Deleting book's metadata.")
