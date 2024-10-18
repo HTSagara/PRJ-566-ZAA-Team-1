@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { View, StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -8,7 +8,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedTextInput } from "@/components/ThemedTextInput";
 import { ThemedButton } from "@/components/ThemedButton";
 
-import { Auth, getUser } from "@/utilities/auth";
+import { Auth, AuthContext, User, getUser } from "@/utilities/auth";
 
 interface UserInfo {
   name: string;
@@ -18,6 +18,8 @@ interface UserInfo {
 
 export default function user() {
   const backendApiUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
+
+  const user = useContext(AuthContext) as User;
 
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
@@ -32,15 +34,10 @@ export default function user() {
 
   useEffect(() => {
     async function init() {
-      const user = await getUser();
-      if (!user) {
-        console.info("No user was found");
-        return;
-      }
+      console.debug("inside user init()")
 
       const url = `${backendApiUrl}/user`;
       console.debug(`Calling GET ${url}...`);
-
       try {
         const res = await fetch(url, {
           headers: user.authorizationHeaders(),
@@ -57,7 +54,8 @@ export default function user() {
         setBirthdate(data.birthdate);
         setEmail(data.email);
         setOriginalData(data); // Set the initial state
-      } catch (err) {
+      } 
+      catch (err) {
         console.error("Unable to call GET /user", { err });
       }
 
@@ -69,17 +67,12 @@ export default function user() {
 
   const handleSave = async () => {
     try {
-      const user = await getUser();
-      if (!user) {
-        throw new Error("user is undefined");
-      }
       const url = `${backendApiUrl}/user`;
 
       const res = await fetch(url, {
         method: "PUT",
         headers: {
-          ...user.authorizationHeaders(),
-          "Content-Type": "application/json",
+          ...user.authorizationHeaders("application/json"),
         },
         body: JSON.stringify({ name, email, birthdate }),
       });
@@ -93,7 +86,8 @@ export default function user() {
 
       // Update original data
       setOriginalData({ name, email, birthdate });
-    } catch (err) {
+    } 
+    catch (err) {
       console.error("Failed to update user details", { err });
     }
   };

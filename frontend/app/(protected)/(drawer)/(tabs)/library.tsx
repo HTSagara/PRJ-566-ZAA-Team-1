@@ -1,25 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   StyleSheet,
   Image,
   TouchableOpacity,
   Text,
-  TextInput,
   View,
   FlatList,
   ActivityIndicator,
   Dimensions,
   Modal,
-  Button,
   Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { getUser } from "@/utilities/auth";
-import { RootStackParamList } from "./types"; // Import your defined types
-import { StackNavigationProp } from "@react-navigation/stack";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system"; // This is used to get the file as a blob
-import { Platform } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+
+import { AuthContext, type User } from "@/utilities/auth";
+import { RootStackParamList } from "./types"; // Import your defined types
+import Loading from "@/components/Loading";
 
 // Define the book type
 interface Book {
@@ -32,33 +30,41 @@ interface Book {
 const { width } = Dimensions.get("window");
 
 export default function LibraryScreen() {
+
+  const user = useContext(AuthContext) as User;
+
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [uploadingBook, setUploadingBook] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   const pickBookFile = async () => {
+    console.debug("Inside library.tsx pickBookFile()");
+
     let result = await DocumentPicker.getDocumentAsync({
-      type: ["application/pdf", ".epub"],
+      type: [".epub"],
       copyToCacheDirectory: true,
     });
 
     if (result && result.output && result.output.length > 0) {
       setSelectedFile(result.assets[0]);
-      console.log("File selected: ", result.assets[0].name); // Log the file name
-    } else {
-      console.log("File picking canceled or failed.");
+      console.debug("File selected: ", result.assets[0].name); // Log the file name
+    } 
+    else {
+      console.debug("File picking canceled or failed.");
     }
   };
 
   const uploadBook = async () => {
-    if (
-      selectedFile &&
-      (selectedFile.name.endsWith(".pdf") ||
-        selectedFile.name.endsWith(".epub"))
-    ) {
+    console.debug("inside library uploadBook()");
+
+    setUploadingBook(true);
+
+    if (selectedFile && selectedFile.name.endsWith(".epub")) {
+
       const formData = new FormData();
 
       // Convert the file URI to a Blob using fetch
@@ -79,14 +85,7 @@ export default function LibraryScreen() {
 
       //console log
       for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
-
-      const user = await getUser();
-      if (!user) {
-        Alert.alert("Error", "No user was found");
-        console.info("No user was found");
-        return;
+        console.debug(`${key}:`, value);
       }
 
       try {
@@ -99,31 +98,36 @@ export default function LibraryScreen() {
         });
 
         if (response.status === 200) {
+          console.log("Book uploaded successfully!")
           Alert.alert("Success", "Book uploaded successfully!");
-        } else {
+          const newBookData = await response.json()
+          setBooks([...books, newBookData]);
+        } 
+        else {
+          console.error("Failed to upload book", response)
           Alert.alert("Error", "Failed to upload book");
         }
-      } catch (error) {
+      } 
+      catch (error) {
         console.error("Error uploading book:", error);
         Alert.alert("Error", "An error occurred during upload.");
-      } finally {
+      } 
+      finally {
         setModalVisible(false);
-        setSelectedFile(null); // Reset selected file after upload
+        setUploadingBook(false);
+        setSelectedFile(null);
       }
-    } else {
-      Alert.alert("Invalid file", "Please select a valid PDF or EPUB file.");
+    } 
+    else {
+      Alert.alert("Invalid file", "Please select a valid EPUB file.");
     }
   };
 
   useEffect(() => {
     const fetchBooks = async () => {
-      try {
-        const user = await getUser();
-        if (!user) {
-          Alert.alert("Error", "No user was found");
-          return;
-        }
+      console.debug("inside library fetchBooks()");
 
+      try {
         const response = await fetch("http://localhost:8000/books", {
           method: "GET",
           headers: {
@@ -134,14 +138,17 @@ export default function LibraryScreen() {
         if (response.ok) {
           const data = await response.json();
           setBooks(data);
-        } else {
+        } 
+        else {
           console.error("Error fetching books:", response.statusText);
           Alert.alert("Error", "Failed to fetch books");
         }
-      } catch (error) {
+      } 
+      catch (error) {
         console.error("Error fetching books:", error);
         Alert.alert("Error", "An error occurred while fetching books.");
-      } finally {
+      } 
+      finally {
         setLoading(false);
       }
     };
@@ -170,32 +177,39 @@ export default function LibraryScreen() {
       </View>
 
       {/* Book cards list */}
-      <FlatList
-        data={books}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => {
-              navigation.navigate("bookdetails", { bookId: item.id }); // Navigate to book details
-            }}
-            style={styles.cardContainer}
-          >
-            <View style={styles.card}>
-              <Image
-                source={{ uri: item.image || "https://placehold.co/100x150" }}
-                style={styles.bookImage}
-                resizeMode="contain"
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.bookTitle}>{item.title}</Text>
-                <Text style={styles.bookAuthor}>{item.author}</Text>
+      {books.length <= 0 ? 
+        <View style={{flex: 1, justifyContent: "center", alignItems: "center", gap: 8}}>
+          <Text>Library is empty...</Text>
+          <Text>Upload a book to get started.</Text>
+        </View>
+      :
+        <FlatList
+          data={books}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate("bookdetails", { bookId: item.id }); // Navigate to book details
+              }}
+              style={styles.cardContainer}
+            >
+              <View style={styles.card}>
+                <Image
+                  source={{ uri: item.image || "https://placehold.co/100x150" }}
+                  style={styles.bookImage}
+                  resizeMode="contain"
+                />
+                <View style={styles.cardContent}>
+                  <Text style={styles.bookTitle}>{item.title}</Text>
+                  <Text style={styles.bookAuthor}>{item.author}</Text>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        )}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.cardList}
-        numColumns={5}
-      />
+            </TouchableOpacity>
+          )}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.cardList}
+          numColumns={5}
+        />
+      }
 
       {/* Modal for file upload */}
       <Modal
@@ -208,11 +222,20 @@ export default function LibraryScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalView}>
-            <Text style={styles.modalText}>Upload a Book (PDF or EPUB)</Text>
+          {uploadingBook ? 
+            <Loading message="Uploading book..."/>
+          :
+          <>
+            <Text style={styles.modalText}>Upload a Book (EPUB)</Text>
+
             {/* Pick a Book File */}
-            <Button title="Pick a File" onPress={pickBookFile} />
+            <TouchableOpacity style={[styles.button, styles.buttonClose]} onPress={pickBookFile}>
+                <Text style={styles.textStyle}>Pick a File</Text>
+            </TouchableOpacity>
+
             {selectedFile && <Text>Selected File: {selectedFile.name}</Text>}
             <br></br>
+
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.button, styles.buttonClose]}
@@ -222,11 +245,13 @@ export default function LibraryScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.buttonClose]}
-                onPress={() => setModalVisible(false)}
+                onPress={() => {setModalVisible(false); setSelectedFile(null)}}
               >
                 <Text style={styles.textStyle}>Cancel</Text>
               </TouchableOpacity>
             </View>
+          </>
+          }
           </View>
         </View>
       </Modal>
@@ -235,14 +260,6 @@ export default function LibraryScreen() {
 }
 
 const styles = StyleSheet.create({
-  input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 10,
-    width: "100%",
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -266,11 +283,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#FFFFFF",
     fontWeight: "bold",
-  },
-  cardList: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    justifyContent: "space-between",
   },
   cardContainer: {
     flex: 1,
@@ -315,6 +327,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
   },
+  cardList: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    justifyContent: "space-between",
+  },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -343,6 +360,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   buttonRow: {
+    marginTop: 15,
     flexDirection: "row",
     justifyContent: "space-around",
     width: "100%",
