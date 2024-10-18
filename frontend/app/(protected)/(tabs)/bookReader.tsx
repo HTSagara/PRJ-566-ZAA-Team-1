@@ -80,6 +80,7 @@ const BookReader: React.FC = () => {
       {bookUrl ? (
         <ReactReader
           url={bookUrl}
+          epubInitOptions={{openAs: 'epub'}}
           location={location}
           locationChanged={(epubcfi: string) => setLocation(epubcfi)}
         />
