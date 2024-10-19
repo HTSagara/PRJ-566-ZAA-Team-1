@@ -6,7 +6,11 @@ from database.book_metadata import extract_metadata
 from database.mongodb import get_mongodb_collection
 from models.book import Book, extract_metadata, hash_email
 <<<<<<< HEAD
+<<<<<<< HEAD
 from database.s3_db import read_file_data, delete_file_data 
+=======
+from database.s3_db import delete_file_data, read_file_data
+>>>>>>> ba0ef90f5fddd0d384280fe80f1d93f1806a79d0
 =======
 from database.s3_db import delete_file_data, read_file_data
 >>>>>>> ba0ef90f5fddd0d384280fe80f1d93f1806a79d0
@@ -176,6 +180,9 @@ async def delete_book(request: Request, book_id: str):
 =======
         # S3 key where the book file is stored
         s3_key = f"{ownerId}/{book_id}"
+<<<<<<< HEAD
+>>>>>>> ba0ef90f5fddd0d384280fe80f1d93f1806a79d0
+=======
 >>>>>>> ba0ef90f5fddd0d384280fe80f1d93f1806a79d0
     
             # Now deleing book from AWS s3
