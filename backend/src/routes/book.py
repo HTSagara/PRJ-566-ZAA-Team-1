@@ -5,7 +5,7 @@ from auth import auth_middleware, get_user_info
 from database.book_metadata import extract_metadata
 from database.mongodb import get_mongodb_collection
 from models.book import Book, extract_metadata, hash_email
-from database.s3_db import read_file_data
+from database.s3_db import read_file_data, delete_file_data 
 from io import BytesIO
 import boto3
 from botocore.exceptions import NoCredentialsError
@@ -155,29 +155,43 @@ async def delete_book(request: Request, book_id: str):
     access_token = auth_header.split(" ")[1]
     user_email = get_user_info(access_token)['email']
 
-    # Hash the user's email to match the collection name (ownerId)
-    ownerId = hash_email(user_email)
+    try:
+        # Hash the user's email to match the collection name (ownerId)
+        ownerId = hash_email(user_email)
     
-    # Deleting the book metadata from mongodb
-    collection = get_mongodb_collection(ownerId)
-    result = collection.delete_one({"_id": book_id})
+        # Deleting the book metadata from mongodb
+        collection = get_mongodb_collection(ownerId)
+        result = collection.delete_one({"_id": book_id})
 
-    if result.deleted_count > 0:
-        print(f"Book with ID {book_id} successfully deleted.")
+        if result.deleted_count > 0:
+            print(f"Book with ID {book_id} successfully deleted.")
 
-        # S3 key where the book file is stored
-        s3_key = f"{owner_id}/{book_id}"
+            # S3 key where the book file is stored
+            s3_key = f"{ownerId}/{book_id}"
     
-        # Now deleing book from AWS s3
-        response = delete_file_data(s3_key)
+            # Now deleing book from AWS s3
+            response = delete_file_data(s3_key)
 
-        # Step 3: Check S3 deletion result
-        if response:
-            print(f"Book file {s3_key} successfully deleted from S3.")
-            return JSONResponse(content="Book successfully deleted.") 
+            # Step 3: Check S3 deletion result
+            if response:
+                print(f"Book file {s3_key} successfully deleted from S3.")
+                return JSONResponse(
+                    content={"message": "Book successfully deleted."},
+                    status_code=status.HTTP_200_OK
+                ) 
+            else:
+                print(f"Error deleting book file {s3_key} from S3.")
+                return JSONResponse(
+                    content={"message": "Error deleting book data from S3."},
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )  
         else:
-            print(f"Error deleting book file {s3_key} from S3.")
-            return JSONResponse(content="Error Deleting book's data.")  
-    else:
-        print(f"Error Deleting File metaData {book_id}.")
-        return JSONResponse(content="Error Deleting book's metadata.")
+            print(f"Error Deleting File metaData {book_id}.")
+            return JSONResponse(
+                content={"message": "Error deleting book metadata."},
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_501_INTERNAL_SERVER_ERROR, detail=str(e))
+        

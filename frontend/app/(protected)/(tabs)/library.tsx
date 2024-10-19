@@ -210,7 +210,9 @@ export default function LibraryScreen() {
           <View style={styles.modalView}>
             <Text style={styles.modalText}>Upload a Book (PDF or EPUB)</Text>
             {/* Pick a Book File */}
-            <Button title="Pick a File" onPress={pickBookFile} />
+            <View style={{ marginBottom: 20 }}>
+              <Button title="Pick a File" onPress={pickBookFile} color="#28A745"/>
+            </View>
             {selectedFile && <Text>Selected File: {selectedFile.name}</Text>}
             <br></br>
             <View style={styles.buttonRow}>
@@ -322,10 +324,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalView: {
-    width: 300,
+    width: 350,
     backgroundColor: "white",
     borderRadius: 20,
-    padding: 35,
+    padding: 50,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
@@ -346,6 +348,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     width: "100%",
+    marginTop: 20,
   },
   button: {
     borderRadius: 10,

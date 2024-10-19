@@ -14,6 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
+import {router} from "expo-router";
 
 // Define the types for the book object and route params
 interface Book {
@@ -36,6 +37,7 @@ export default function BookDetailsScreen() {
   // Use route params with proper typing
   const route = useRoute<RouteProp<RootStackParamList, "bookReader">>();
   const { bookId } = route.params; // Now TypeScript understands bookId
+  const backendURL = process.env.EXPO_PUBLIC_BACKEND_API_URL;
 
   // Load saved icons and notes from AsyncStorage when page is loaded
   useEffect(() => {
@@ -139,6 +141,42 @@ export default function BookDetailsScreen() {
     await AsyncStorage.setItem(`isChecked_${bookId}`, JSON.stringify(newState));
   };
 
+  // Deleting button handle
+  const handleDeleteAction = async () => {
+    // calling the backend route for delete
+    try {
+      const user = await getUser();
+      if (!user) {
+        Alert.alert("Error", "No user found");
+        return;
+      }
+
+      const response = await fetch(backendURL + `/book/${bookId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${user.accessToken}`,
+            },
+          });
+
+      if(response.ok) {
+        const data = await response.json();
+        alert(data.message);
+        router.navigate("./library");
+      }
+      else
+      {
+        const error = await response.json();
+        alert(`Error while deleting book: ${error.message}`);
+      }
+    }
+    catch (err)
+    {
+      console.log(`Exception while deleting book: ${err}`);
+      Alert.alert("Error", "Failed to delete book");
+    }
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -213,7 +251,7 @@ export default function BookDetailsScreen() {
           </TouchableOpacity>
           {/* Trash icon */}
           <TouchableOpacity
-            onPress={() => Alert.alert("Delete", "Delete button pressed")}
+            onPress={() => handleDeleteAction()}
           >
             <Icon
               name="trash"
