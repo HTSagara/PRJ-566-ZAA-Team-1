@@ -7,6 +7,8 @@ import {
   Alert,
   StyleSheet,
   TextInput,
+  Button,
+  Modal
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { getUser } from "@/utilities/auth";
@@ -32,6 +34,8 @@ export default function BookDetailsScreen() {
   const [isStarred, setIsStarred] = useState(false);
   const [isClocked, setIsClocked] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [modelVisible, setModelVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   // Use route params with proper typing
@@ -143,38 +147,51 @@ export default function BookDetailsScreen() {
 
   // Deleting button handle
   const handleDeleteAction = async () => {
+    setModelVisible(true);
+  }
+
+  // handle user input on confirmation
+  const handleConfirm = async () => {
+    console.log("inside confirm model")
+    setModelVisible(false);
     // calling the backend route for delete
-    try {
-      const user = await getUser();
-      if (!user) {
-        Alert.alert("Error", "No user found");
-        return;
-      }
+      try {
+        const user = await getUser();
+        if (!user) {
+          Alert.alert("Error", "No user found");
+          return;
+        }
 
-      const response = await fetch(backendURL + `/book/${bookId}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${user.accessToken}`,
-            },
-          });
+        const response = await fetch(backendURL + `/book/${bookId}`,
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${user.accessToken}`,
+              },
+            });
 
-      if(response.ok) {
-        const data = await response.json();
-        alert(data.message);
-        router.navigate("./library");
+        if(response.ok) {
+          const data = await response.json();
+          alert(data.message);
+          router.navigate("./library");
+        }
+        else
+        {
+          const error = await response.json();
+          alert(`Error while deleting book: ${error.message}`);
+        }
       }
-      else
+      catch (err)
       {
-        const error = await response.json();
-        alert(`Error while deleting book: ${error.message}`);
+        console.log(`Exception while deleting book: ${err}`);
+        Alert.alert("Error", "Failed to delete book");
       }
-    }
-    catch (err)
-    {
-      console.log(`Exception while deleting book: ${err}`);
-      Alert.alert("Error", "Failed to delete book");
-    }
+  }
+
+  // handle user input on cancel
+  const handleCancel = () => {
+    setModelVisible(false);
+    setIsLoading(false);
   }
 
   return (
@@ -193,6 +210,23 @@ export default function BookDetailsScreen() {
           <Text style={styles.readButton}>Read</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+          transparent={true}
+          visible={modelVisible}
+          animationType="slide"
+          onRequestClose={handleCancel}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalText}>{"Are you sure you want to Delete this book?"}</Text>
+              <View style={styles.buttonContainer}>
+                <Button title="Confirm" onPress={handleConfirm} />
+                <Button title="Cancel" onPress={handleCancel} />
+              </View>
+            </View>
+          </View>
+        </Modal>
 
       {/* Book Image */}
       <View style={styles.bookImageContainer}>
@@ -356,4 +390,28 @@ const styles = StyleSheet.create({
     color: "#333",
     minHeight: 100,
   },
+
+  modalOverlay: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+},
+modalContainer: {
+  width: 350,
+  padding: 30,
+  backgroundColor: 'white',
+  borderRadius: 10,
+  elevation: 5,
+},
+modalText: {
+  fontSize: 18,
+  textAlign: 'center',
+  marginBottom: 20,
+},
+buttonContainer: {
+  marginTop: 20,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+},
 });
