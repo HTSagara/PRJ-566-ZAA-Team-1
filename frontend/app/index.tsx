@@ -3,12 +3,14 @@ import {
   StyleSheet,
   View,
   TouchableOpacity,
+  ActivityIndicator,
   Text,
 } from 'react-native';
 import { useState, useEffect } from 'react';
-import { Redirect, useRouter, useFocusEffect } from 'expo-router';
+import { Redirect } from 'expo-router';
 
 import { Auth, User, getUser } from '@/utilities/auth';
+import Loading from '@/components/Loading';
 
 export default function LandingPage() {
 
@@ -33,25 +35,14 @@ export default function LandingPage() {
     init();
   }, []);
 
-  // useFocusEffect(() => {
-  //   if (user) {
-  //     // return <Redirect href="/library" />;
-  //     router.replace("/library");
-  //   }
-  // })
-
   if (loading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.textContainer}>
-          <Text style={styles.centerText}>Loading WordVision...</Text>
-        </View>
-      </View>
-    );
+    return <Loading message='Loading WordVision...'/>
   }
+
   else if (user) {
     return <Redirect href="/library" />
   }
+
   else {
     return (
       <View style={styles.container}>
@@ -119,6 +110,12 @@ const styles = StyleSheet.create({
     fontSize: 32, // Larger text
     fontWeight: "bold",
     textAlign: 'center',
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

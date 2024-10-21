@@ -1,3 +1,4 @@
+// app/(protected)/(tabs)/_layout.tsx
 import { Tabs } from "expo-router";
 import React from "react";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
@@ -14,6 +15,7 @@ export default function TabLayout() {
         headerShown: false,
       }}
     >
+      {/* Library Tab */}
       <Tabs.Screen
         name="library"
         options={{
@@ -26,12 +28,34 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/*Hidden tabs*/}
       <Tabs.Screen
         name="bookdetails"
         options={{
-          tabBarButton: () => null,
+          tabBarButton: () => null, // Hides the tab button
           headerShown: false,
-          tabBarStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="bookReader"
+        options={{
+          tabBarButton: () => null, // Hides the tab button
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="libraryStack"
+        options={{
+          tabBarButton: () => null, // Hides the tab button
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="types"
+        options={{
+          tabBarButton: () => null, // Hides the tab button
+          headerShown: false,
         }}
       />
     </Tabs>

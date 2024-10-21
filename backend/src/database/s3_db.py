@@ -43,3 +43,15 @@ def read_file_data(key: str):
     except ClientError as e:
         print(f"Error retrieving file from S3: {e}")
         return None
+
+def delete_file_data(key: str):
+    try:
+        # Deleting the file from S3
+        response = s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=key)
+        
+        # Check if the response indicates a successful deletion
+        return response.get('ResponseMetadata', {}).get('HTTPStatusCode') == 204
+    except ClientError as e:
+        # Handle specific S3 errors or log the error message
+        print(f"Failed to delete file {key}: {e}")
+        return False

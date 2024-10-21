@@ -5,13 +5,21 @@ from auth import auth_middleware, get_user_info
 from database.book_metadata import extract_metadata
 from database.mongodb import get_mongodb_collection
 from models.book import Book, extract_metadata, hash_email
-from database.s3_db import read_file_data
+from database.s3_db import read_file_data, delete_file_data 
 from io import BytesIO
+import boto3
+from botocore.exceptions import NoCredentialsError
+from dotenv import load_dotenv
+import os
 
 from pydantic import BaseModel
 from typing import Annotated, Optional
 
 print(f"hello from book route")
+
+load_dotenv()
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+s3_client = boto3.client('s3')
 
 router = APIRouter(dependencies=[Depends(auth_middleware)])
 
@@ -19,6 +27,9 @@ class BookFormData(BaseModel):
     title: Optional[str] = None
     author: Optional[str] = None
     file: UploadFile
+
+# Define S3 client outside the route for reuse
+s3 = boto3.client('s3')
 
 @router.post("/book", tags=["book"])
 async def upload_book(request: Request, data: Annotated[BookFormData, Form()]):
@@ -108,27 +119,79 @@ async def get_book_info(request: Request, book_id: str):
 
   
 @router.get("/book/{book_id}", tags=["book"])
-async def download_book(request: Request, book_id: str):
-  # Get user email from Authorization header
+async def get_book_presigned_url(request: Request, book_id: str):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+
+    access_token = auth_header.split(" ")[1]
+    user_email = get_user_info(access_token)['email']
+    owner_id = hash_email(user_email)  # Hash the user's email to get the S3 folder name
+
+    # Define the S3 key for the book file
+    s3_key = f"{owner_id}/{book_id}"
+
+    try:
+        # Generate a pre-signed URL for the S3 object
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': S3_BUCKET_NAME, 'Key': s3_key},
+            ExpiresIn=3600  # URL will expire in 1 hour
+        )
+        return {"url": presigned_url}
+
+    except NoCredentialsError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="S3 credentials are missing or invalid")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+# Delete route for book
+@router.delete("/book/{book_id}", tags=["book"])
+async def delete_book(request: Request, book_id: str):
+    # Get user email from Authorization header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
     access_token = auth_header.split(" ")[1]
     user_email = get_user_info(access_token)['email']
-        
 
-    # Hash the user's email to match the collection name (ownerId)
-    owner_id = hash_email(user_email)  # using already defined function to hash the email
-
-    # S3 key where the book file is stored
-    s3_key = f"{owner_id}/{book_id}"
-
-    # Read the file content from S3
-    book_file = read_file_data(s3_key)
-
-    print(f"Book downloaded successfully: {book_id}")
-    if book_file is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found in S3")
+    try:
+        # Hash the user's email to match the collection name (ownerId)
+        ownerId = hash_email(user_email)
     
-    # Return the file as a StreamingResponse
-    return StreamingResponse(BytesIO(book_file), media_type="application/octet-stream", headers={"Content-Disposition": f"attachment; filename={book_id}"})
+        # Deleting the book metadata from mongodb
+        collection = get_mongodb_collection(ownerId)
+        result = collection.delete_one({"_id": book_id})
+
+        if result.deleted_count > 0:
+            print(f"Book with ID {book_id} successfully deleted.")
+
+            # S3 key where the book file is stored
+            s3_key = f"{ownerId}/{book_id}"
+    
+            # Now deleing book from AWS s3
+            response = delete_file_data(s3_key)
+
+            # Step 3: Check S3 deletion result
+            if response:
+                print(f"Book file {s3_key} successfully deleted from S3.")
+                return JSONResponse(
+                    content={"message": "Book successfully deleted."},
+                    status_code=status.HTTP_200_OK
+                ) 
+            else:
+                print(f"Error deleting book file {s3_key} from S3.")
+                return JSONResponse(
+                    content={"message": "Error deleting book data from S3."},
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )  
+        else:
+            print(f"Error Deleting File metaData {book_id}.")
+            return JSONResponse(
+                content={"message": "Error deleting book metadata."},
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_501_INTERNAL_SERVER_ERROR, detail=str(e))
+        
