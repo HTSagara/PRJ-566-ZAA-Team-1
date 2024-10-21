@@ -1,5 +1,6 @@
 import { Amplify, Auth } from "aws-amplify";
 import { CognitoUser } from "amazon-cognito-identity-js";
+import { createContext } from "react";
 
 export interface User {
   username: string;
@@ -97,4 +98,6 @@ async function getUser(): Promise<User | null> {
   }
 }
 
-export { Auth, getUser };
+const AuthContext = createContext<User | null>(null);
+
+export { Auth, getUser, AuthContext };
