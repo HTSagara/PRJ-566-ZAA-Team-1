@@ -8,3 +8,9 @@ pymongo[srv]
 ebooklib
 python-multipart
 pymupdf
+diffusers
+transformers 
+pillow
+torch 
+torchvision==0.20.0
+accelerate
