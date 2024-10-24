@@ -11,6 +11,7 @@ import os
 from auth import auth_middleware
 from routes import user
 from routes import book
+from routes import text2image
 
 load_dotenv()
 COGNITO_CLIENT_ID = os.getenv("COGNITO_CLIENT_ID")
@@ -30,6 +31,7 @@ app.add_middleware(
 # include routes
 app.include_router(user.router)
 app.include_router(book.router)
+app.include_router(text2image.router)
 
 # Public Route Example (no authentication required)
 @app.get("/public")
