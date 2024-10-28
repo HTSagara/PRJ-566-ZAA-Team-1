@@ -15,7 +15,8 @@ hf_space = os.getenv("HF_SPACE")
 
 # AWS S3 Configuration
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
-s3_client = boto3.client('s3', region_name=os.getenv("AWS_REGION"))
+AWS_REGION = os.getenv("COGNITO_REGION")
+s3_client = boto3.client('s3', region_name=os.getenv(AWS_REGION))
 
 router = APIRouter(dependencies=[Depends(auth_middleware)])
 
@@ -52,15 +53,11 @@ async def generate_image(request: Request, prompt: TextPrompt):
         file_name = f"{prompt.prompt[:10].replace(' ', '_')}_generated_image.png"
         s3_key = f"generated_images/{file_name}"
 
-        # Upload the image data to S3
-        s3_client.upload_fileobj(io.BytesIO(img_data), S3_BUCKET_NAME, s3_key)
+        # Upload the image data to S3 with public-read access
+        s3_client.upload_fileobj(io.BytesIO(img_data), S3_BUCKET_NAME, s3_key, ExtraArgs={'ACL': 'public-read'})
 
         # Generate a presigned URL to access the uploaded image
-        s3_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': S3_BUCKET_NAME, 'Key': s3_key},
-            ExpiresIn=3600  # URL expires in 1 hour
-        )
+        s3_url = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
 
         return JSONResponse(content={"s3_url": s3_url})
 
