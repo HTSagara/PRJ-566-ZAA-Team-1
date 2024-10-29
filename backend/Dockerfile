@@ -5,10 +5,13 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Copy the entire backend folder into the container
-COPY . /app
+COPY requirements.txt /app/
 
 # Install any dependencies specified in the requirements
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entire backend folder into the container
+COPY . /app
 
 # Change the working directory to /app/src for the app code
 WORKDIR /app/src
