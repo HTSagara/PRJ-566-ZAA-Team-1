@@ -54,7 +54,7 @@ async def generate_image(request: Request, prompt: TextPrompt):
         s3_key = f"generated_images/{file_name}"
 
         # Upload the image data to S3 with public-read access
-        s3_client.upload_fileobj(io.BytesIO(img_data), S3_BUCKET_NAME, s3_key, ExtraArgs={'ACL': 'public-read'})
+        s3_client.upload_fileobj(io.BytesIO(img_data), S3_BUCKET_NAME, s3_key)
 
         # Generate a presigned URL to access the uploaded image
         s3_url = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
