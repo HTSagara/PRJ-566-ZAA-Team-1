@@ -8,3 +8,4 @@ pymongo[srv]
 ebooklib
 python-multipart
 pymupdf
+gradio_client
