@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     width: "100%",
-    marginTop: 20,
+    //marginTop: 20,
   },
   button: {
     borderRadius: 10,
