@@ -199,9 +199,14 @@ async def delete_book(request: Request, book_id: str):
         raise HTTPException(status_code=status.HTTP_501_INTERNAL_SERVER_ERROR, detail=str(e))
         
 
+# Pydantic model for the input
+class CreateHighlight(BaseModel):
+    text: str
+    location: str
+
 # POST /book/:id/highlight - Add a highlight to the book's metadata
 @router.post("/book/{book_id}/highlight", tags=["book"])
-async def add_book_highlight(request: Request, book_id: str, body: dict):
+async def add_book_highlight(request: Request, book_id: str, body: CreateHighlight):
     # Get user email from Authorization header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -222,8 +227,8 @@ async def add_book_highlight(request: Request, book_id: str, body: dict):
     highlight_id = str(uuid.uuid4())
     highlight = {
         "id": highlight_id,
-        "text": body.get("text"),
-        "location": body.get("location", {})  # Additional location metadata for highlight
+        "text": body.text,
+        "location": body.location
     }
 
     # Add the new highlight to the existing book's metadata
