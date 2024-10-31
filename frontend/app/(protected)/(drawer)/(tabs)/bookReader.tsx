@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { ReactReader } from "react-reader";
 import { useRoute } from "@react-navigation/native";
@@ -43,6 +44,9 @@ const BookReader: React.FC = () => {
   }>({ visible: false, x: 0, y: 0 });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [rendition, setRendition] = useState<Rendition | undefined>(undefined);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     if (!bookId) {
@@ -164,7 +168,7 @@ const BookReader: React.FC = () => {
               fill: "red",
               "fill-opacity": "0.5",
               "mix-blend-mode": "multiply",
-            },
+            }
           );
 
           // getContents() actually returns Contents[] and not Contents
@@ -182,8 +186,44 @@ const BookReader: React.FC = () => {
     setContextMenu({ visible: false, x: 0, y: 0 });
   };
 
-  const handleRenderImage = () => {
-    Alert.alert("Render Image", "Render Image option selected");
+  const handleRenderImage = async () => {
+    try {
+      const url = `http://localhost:8000/generate-image`;
+      const response = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify({ prompt: selection?.text }),
+        headers: {
+          Authorization: user.authorizationHeaders().Authorization, // Only pass the Authorization header
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const imageUrl = data.s3_url; // Retrieve the S3 URL
+
+        // Display the generated image in the app
+        Alert.alert(
+          "Image Generated",
+          "The image has been generated and saved to S3.",
+          [
+            {
+              text: "View Image",
+              onPress: () => {
+                // Navigate or show the image in a new view
+                setGeneratedImageUrl(imageUrl); // Save the image URL in state
+              },
+            },
+          ]
+        );
+      } else {
+        console.error("Failed to generate image:", response.statusText);
+        Alert.alert("Error", "Failed to generate image.");
+      }
+    } catch (error) {
+      console.error("Error generating image:", error);
+      Alert.alert("Error", "An error occurred while generating the image.");
+    }
+
     setContextMenu({ visible: false, x: 0, y: 0 });
   };
 
@@ -241,6 +281,17 @@ const BookReader: React.FC = () => {
           >
             <Text>Visualize</Text>
           </TouchableOpacity>
+        </View>
+      )}
+
+      {generatedImageUrl && (
+        <View style={{ margin: 20 }}>
+          <Text>Generated Image:</Text>
+          <Image
+            source={{ uri: generatedImageUrl }}
+            style={{ width: 200, height: 200 }}
+            resizeMode="contain"
+          />
         </View>
       )}
 
