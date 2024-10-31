@@ -8,7 +8,7 @@ import {
   StyleSheet,
   TextInput,
   Button,
-  Modal
+  Modal,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { getUser } from "@/utilities/auth";
@@ -16,7 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import {router} from "expo-router";
+import { router } from "expo-router";
 
 // Define the types for the book object and route params
 interface Book {
@@ -60,7 +60,7 @@ export default function BookDetailsScreen() {
             headers: {
               Authorization: `Bearer ${user.accessToken}`,
             },
-          }
+          },
         );
 
         if (response.ok) {
@@ -148,51 +148,46 @@ export default function BookDetailsScreen() {
   // Deleting button handle
   const handleDeleteAction = async () => {
     setModelVisible(true);
-  }
+  };
 
   // handle user input on confirmation
   const handleConfirm = async () => {
-    console.log("inside confirm model")
+    console.log("inside confirm model");
     setModelVisible(false);
     // calling the backend route for delete
-      try {
-        const user = await getUser();
-        if (!user) {
-          Alert.alert("Error", "No user found");
-          return;
-        }
-
-        const response = await fetch(backendURL + `/book/${bookId}`,
-            {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${user.accessToken}`,
-              },
-            });
-
-        if(response.ok) {
-          const data = await response.json();
-          alert(data.message);
-          router.navigate("./library");
-        }
-        else
-        {
-          const error = await response.json();
-          alert(`Error while deleting book: ${error.message}`);
-        }
+    try {
+      const user = await getUser();
+      if (!user) {
+        Alert.alert("Error", "No user found");
+        return;
       }
-      catch (err)
-      {
-        console.log(`Exception while deleting book: ${err}`);
-        Alert.alert("Error", "Failed to delete book");
+
+      const response = await fetch(backendURL + `/book/${bookId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(data.message);
+        router.navigate("./library");
+      } else {
+        const error = await response.json();
+        alert(`Error while deleting book: ${error.message}`);
       }
-  }
+    } catch (err) {
+      console.log(`Exception while deleting book: ${err}`);
+      Alert.alert("Error", "Failed to delete book");
+    }
+  };
 
   // handle user input on cancel
   const handleCancel = () => {
     setModelVisible(false);
     setIsLoading(false);
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -212,21 +207,23 @@ export default function BookDetailsScreen() {
       </View>
 
       <Modal
-          transparent={true}
-          visible={modelVisible}
-          animationType="slide"
-          onRequestClose={handleCancel}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalText}>{"Are you sure you want to Delete this book?"}</Text>
-              <View style={styles.buttonContainer}>
-                <Button title="Confirm" onPress={handleConfirm} />
-                <Button title="Cancel" onPress={handleCancel} />
-              </View>
+        transparent={true}
+        visible={modelVisible}
+        animationType="slide"
+        onRequestClose={handleCancel}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalText}>
+              {"Are you sure you want to Delete this book?"}
+            </Text>
+            <View style={styles.buttonContainer}>
+              <Button title="Confirm" onPress={handleConfirm} />
+              <Button title="Cancel" onPress={handleCancel} />
             </View>
           </View>
-        </Modal>
+        </View>
+      </Modal>
 
       {/* Book Image */}
       <View style={styles.bookImageContainer}>
@@ -284,9 +281,7 @@ export default function BookDetailsScreen() {
             />
           </TouchableOpacity>
           {/* Trash icon */}
-          <TouchableOpacity
-            onPress={() => handleDeleteAction()}
-          >
+          <TouchableOpacity onPress={() => handleDeleteAction()}>
             <Icon
               name="trash"
               size={24}
@@ -392,26 +387,26 @@ const styles = StyleSheet.create({
   },
 
   modalOverlay: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-},
-modalContainer: {
-  width: 350,
-  padding: 30,
-  backgroundColor: 'white',
-  borderRadius: 10,
-  elevation: 5,
-},
-modalText: {
-  fontSize: 18,
-  textAlign: 'center',
-  marginBottom: 20,
-},
-buttonContainer: {
-  marginTop: 20,
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-},
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContainer: {
+    width: 350,
+    padding: 30,
+    backgroundColor: "white",
+    borderRadius: 10,
+    elevation: 5,
+  },
+  modalText: {
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  buttonContainer: {
+    marginTop: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
 });

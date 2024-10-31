@@ -30,7 +30,6 @@ interface Book {
 const { width } = Dimensions.get("window");
 
 export default function LibraryScreen() {
-
   const user = useContext(AuthContext) as User;
 
   const [books, setBooks] = useState<Book[]>([]);
@@ -52,8 +51,7 @@ export default function LibraryScreen() {
     if (result && result.output && result.output.length > 0) {
       setSelectedFile(result.assets[0]);
       console.debug("File selected: ", result.assets[0].name); // Log the file name
-    } 
-    else {
+    } else {
       console.debug("File picking canceled or failed.");
     }
   };
@@ -64,7 +62,6 @@ export default function LibraryScreen() {
     setUploadingBook(true);
 
     if (selectedFile && selectedFile.name.endsWith(".epub")) {
-
       const formData = new FormData();
 
       // Convert the file URI to a Blob using fetch
@@ -98,27 +95,23 @@ export default function LibraryScreen() {
         });
 
         if (response.status === 200) {
-          console.log("Book uploaded successfully!")
+          console.log("Book uploaded successfully!");
           Alert.alert("Success", "Book uploaded successfully!");
-          const newBookData = await response.json()
+          const newBookData = await response.json();
           setBooks([...books, newBookData]);
-        } 
-        else {
-          console.error("Failed to upload book", response)
+        } else {
+          console.error("Failed to upload book", response);
           Alert.alert("Error", "Failed to upload book");
         }
-      } 
-      catch (error) {
+      } catch (error) {
         console.error("Error uploading book:", error);
         Alert.alert("Error", "An error occurred during upload.");
-      } 
-      finally {
+      } finally {
         setModalVisible(false);
         setUploadingBook(false);
         setSelectedFile(null);
       }
-    } 
-    else {
+    } else {
       Alert.alert("Invalid file", "Please select a valid EPUB file.");
     }
   };
@@ -138,17 +131,14 @@ export default function LibraryScreen() {
         if (response.ok) {
           const data = await response.json();
           setBooks(data);
-        } 
-        else {
+        } else {
           console.error("Error fetching books:", response.statusText);
           Alert.alert("Error", "Failed to fetch books");
         }
-      } 
-      catch (error) {
+      } catch (error) {
         console.error("Error fetching books:", error);
         Alert.alert("Error", "An error occurred while fetching books.");
-      } 
-      finally {
+      } finally {
         setLoading(false);
       }
     };
@@ -177,12 +167,19 @@ export default function LibraryScreen() {
       </View>
 
       {/* Book cards list */}
-      {books.length <= 0 ? 
-        <View style={{flex: 1, justifyContent: "center", alignItems: "center", gap: 8}}>
+      {books.length <= 0 ? (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
           <Text>Library is empty...</Text>
           <Text>Upload a book to get started.</Text>
         </View>
-      :
+      ) : (
         <FlatList
           data={books}
           renderItem={({ item }) => (
@@ -209,7 +206,7 @@ export default function LibraryScreen() {
           contentContainerStyle={styles.cardList}
           numColumns={5}
         />
-      }
+      )}
 
       {/* Modal for file upload */}
       <Modal
@@ -222,36 +219,44 @@ export default function LibraryScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalView}>
-          {uploadingBook ? 
-            <Loading message="Uploading book..."/>
-          :
-          <>
-            <Text style={styles.modalText}>Upload a Book (EPUB)</Text>
+            {uploadingBook ? (
+              <Loading message="Uploading book..." />
+            ) : (
+              <>
+                <Text style={styles.modalText}>Upload a Book (EPUB)</Text>
 
-            {/* Pick a Book File */}
-            <TouchableOpacity style={[styles.button, styles.buttonPick]} onPress={pickBookFile}>
-                <Text style={styles.textStyle}>Pick a File</Text>
-            </TouchableOpacity>
+                {/* Pick a Book File */}
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonPick]}
+                  onPress={pickBookFile}
+                >
+                  <Text style={styles.textStyle}>Pick a File</Text>
+                </TouchableOpacity>
 
-            {selectedFile && <Text>Selected File: {selectedFile.name}</Text>}
-            <br></br>
+                {selectedFile && (
+                  <Text>Selected File: {selectedFile.name}</Text>
+                )}
+                <br></br>
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonClose]}
-                onPress={uploadBook}
-              >
-                <Text style={styles.textStyle}>Upload</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonClose]}
-                onPress={() => {setModalVisible(false); setSelectedFile(null)}}
-              >
-                <Text style={styles.textStyle}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-          }
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={[styles.button, styles.buttonClose]}
+                    onPress={uploadBook}
+                  >
+                    <Text style={styles.textStyle}>Upload</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, styles.buttonClose]}
+                    onPress={() => {
+                      setModalVisible(false);
+                      setSelectedFile(null);
+                    }}
+                  >
+                    <Text style={styles.textStyle}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -364,7 +369,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     width: "100%",
-    marginTop: 20,
+    //marginTop: 20,
   },
   button: {
     borderRadius: 10,

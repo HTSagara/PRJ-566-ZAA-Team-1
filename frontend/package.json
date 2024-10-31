@@ -21,7 +21,7 @@
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/stack": "^6.4.1",
     "aws-amplify": "^5.x.x",
-    "epubjs-rn": "^0.1.5",
+    "epubjs": "^0.3.93",
     "expo": "~51.0.28",
     "expo-constants": "~16.0.2",
     "expo-document-picker": "~12.0.2",
