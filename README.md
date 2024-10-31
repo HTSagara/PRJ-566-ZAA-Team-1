@@ -12,8 +12,8 @@ A new way of reading books. Combining ePub books with AI-powered image generatio
 
 ### Core Frameworks & Libraries
 
-- **Backend**: [FastAPI](https://fastapi.tiangolo.com/) – A high-performance Python web framework for building APIs.
-- **Frontend**: [Expo React Native](https://expo.dev/) – A cross-platform framework for mobile development.
+- [**Backend**](https://github.com/HTSagara/PRJ-566-ZAA-Team-1/tree/main/backend): [FastAPI](https://fastapi.tiangolo.com/) – A high-performance Python web framework for building APIs.
+- [**Frontend**](https://github.com/HTSagara/PRJ-566-ZAA-Team-1/tree/main/frontend): [Expo React Native](https://expo.dev/) – A cross-platform framework for mobile development.
 
 ### Key Integrations
 
@@ -30,7 +30,7 @@ A new way of reading books. Combining ePub books with AI-powered image generatio
 
 ### Prerequisites
 
-Ensure Docker is installed and running on your machine.
+Ensure [Docker](https://docs.docker.com/get-started/get-docker/) is installed and running on your machine.
 
 ### Running the Project
 
