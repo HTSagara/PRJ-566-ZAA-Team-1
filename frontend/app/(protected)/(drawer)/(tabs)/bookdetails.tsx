@@ -18,7 +18,6 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { router } from "expo-router";
 
-// Define the types for the book object and route params
 interface Book {
   title: string;
   author: string;
@@ -35,7 +34,7 @@ export default function BookDetailsScreen() {
   const [isClocked, setIsClocked] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [modelVisible, setModelVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [tooltip, setTooltip] = useState<string | null>(null); // State for tooltip text
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "bookReader">>();
@@ -58,7 +57,7 @@ export default function BookDetailsScreen() {
             headers: {
               Authorization: `Bearer ${user.accessToken}`,
             },
-          },
+          }
         );
 
         if (response.ok) {
@@ -180,7 +179,6 @@ export default function BookDetailsScreen() {
 
   const handleCancel = () => {
     setModelVisible(false);
-    setIsLoading(false);
   };
 
   return (
@@ -218,6 +216,13 @@ export default function BookDetailsScreen() {
         </View>
       </Modal>
 
+      {/* Tooltip */}
+      {tooltip && (
+        <View style={styles.tooltip}>
+          <Text style={styles.tooltipText}>{tooltip}</Text>
+        </View>
+      )}
+
       <View style={styles.bookImageContainer}>
         <Image
           source={{ uri: book.imgUrl || "https://placehold.co/300x450" }}
@@ -230,7 +235,11 @@ export default function BookDetailsScreen() {
         <Text style={styles.bookAuthor}>by {book.author}</Text>
 
         <View style={styles.actionIcons}>
-          <TouchableOpacity onPress={toggleStar}>
+          <TouchableOpacity
+            onPress={toggleStar}
+            onMouseEnter={() => setTooltip("Favorite")}
+            onMouseLeave={() => setTooltip(null)}
+          >
             <Icon
               name="star"
               size={24}
@@ -240,7 +249,12 @@ export default function BookDetailsScreen() {
               }}
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={toggleClock}>
+
+          <TouchableOpacity
+            onPress={toggleClock}
+            onMouseEnter={() => setTooltip("To read")}
+            onMouseLeave={() => setTooltip(null)}
+          >
             <Icon
               name="clock-o"
               size={24}
@@ -250,7 +264,12 @@ export default function BookDetailsScreen() {
               }}
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={toggleCheck}>
+
+          <TouchableOpacity
+            onPress={toggleCheck}
+            onMouseEnter={() => setTooltip("Have read")}
+            onMouseLeave={() => setTooltip(null)}
+          >
             <Icon
               name="check"
               size={24}
@@ -260,7 +279,12 @@ export default function BookDetailsScreen() {
               }}
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleDeleteAction}>
+
+          <TouchableOpacity
+            onPress={handleDeleteAction}
+            onMouseEnter={() => setTooltip("Delete")}
+            onMouseLeave={() => setTooltip(null)}
+          >
             <Icon
               name="trash"
               size={24}
@@ -294,6 +318,19 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: "#fff",
+  },
+  tooltip: {
+    position: "absolute",
+    bottom: 80,
+    alignSelf: "center",
+    backgroundColor: "black",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  tooltipText: {
+    color: "white",
+    fontSize: 14,
   },
   header: {
     flexDirection: "row",
@@ -337,9 +374,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     marginVertical: 10,
     width: "80%",
-  },
-  icon: {
-    marginHorizontal: 10,
   },
   bookMeta: {
     fontSize: 14,
