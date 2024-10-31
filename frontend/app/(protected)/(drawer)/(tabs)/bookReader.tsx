@@ -17,6 +17,7 @@ interface Selection {
 const BookReader: React.FC = () => {
 
   const user = useContext(AuthContext) as User;
+
   const ctxMenuRef = useRef<any>(null);
 
   const route = useRoute();
@@ -80,13 +81,9 @@ const BookReader: React.FC = () => {
 
       function setContextMenuHandler(section: Section, view: any) {
 
-        const viewX = view.element.getBoundingClientRect().x;
-        const viewY = view.element.getBoundingClientRect().y;
-
         const iframe = view.iframe as HTMLIFrameElement | null;
         const iframeDoc = iframe?.contentDocument;
         const iframeWindow = iframe?.contentWindow;
-
 
         if (iframeDoc && iframeWindow) {
 
@@ -94,8 +91,8 @@ const BookReader: React.FC = () => {
             event.preventDefault();
             const textSelection = iframeWindow?.getSelection();
             if (textSelection && textSelection.toString().length > 0) {
-              const x = event.screenX - (viewX * 0.25)
-              const y = event.screenY - (viewY * 2.5)
+              const x = event.screenX - window.screenX + 5;
+              const y = event.screenY - window.screenX - 275;
               setContextMenu({ visible: true, x, y });
             }
           }
