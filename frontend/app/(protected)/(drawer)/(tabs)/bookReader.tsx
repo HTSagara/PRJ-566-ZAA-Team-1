@@ -146,15 +146,29 @@ const BookReader: React.FC = () => {
         const response = await fetch(`http://localhost:8000/book/${bookId}/highlight`, {
           method: "POST",
           body: JSON.stringify(selection),
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
+          headers: user.authorizationHeaders()
         });
+        
+        console.warn(response)
 
         if (response.status === 200) {
           console.log("Book uploaded successfully!")
           console.log(response.json())
           setModalVisible(false)
+
+          rendition.annotations.add(
+            'highlight',
+            selection.location,
+            {},
+            (e: MouseEvent) => console.log('click on selection', selection.location, e),
+            'hl',
+            { fill: 'red', 'fill-opacity': '0.5', 'mix-blend-mode': 'multiply' }
+          )
+
+          // getContents() actually returns Contents[] and not Contents
+          // @ts-ignore: because return type of getContents() is outdated
+          rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
+
         } 
         else {
           console.error("Failed to upload book", response)
@@ -166,18 +180,6 @@ const BookReader: React.FC = () => {
         setSaveHighlightError(true);
       } 
 
-      rendition.annotations.add(
-        'highlight',
-        selection.location,
-        {},
-        (e: MouseEvent) => console.log('click on selection', selection.location, e),
-        'hl',
-        { fill: 'red', 'fill-opacity': '0.5', 'mix-blend-mode': 'multiply' }
-      )
-
-      // getContents() actually returns Contents[] and not Contents
-      // @ts-ignore: because return type of getContents() is outdated
-      rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
     }
     setContextMenu({ visible: false, x: 0, y: 0 });
   };
@@ -245,14 +247,27 @@ const BookReader: React.FC = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalView}>
-          {!saveHighlightError ?
-          <Loading message="Saving highlight..."/>
-          :
-          <Text>Error saving highlight.</Text>
-          }
+
+
+            {/* Modal Content */}
+            {!saveHighlightError ? (
+              <Loading message="Saving highlight..." />
+            ) : 
+            (
+             <>           
+                <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>X</Text>
+                </TouchableOpacity>
+                    <Text>Error saving highlight.</Text>
+              </> 
+            )}
           </View>
         </View>
       </Modal>
+
     </View>
   );
 };
@@ -292,6 +307,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  closeButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 10,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#000",
+  }
 });
 
 export default BookReader;
