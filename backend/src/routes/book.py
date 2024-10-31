@@ -15,6 +15,8 @@ import os
 from pydantic import BaseModel
 from typing import Annotated, Optional
 
+import uuid
+
 print(f"hello from book route")
 
 load_dotenv()
@@ -36,7 +38,8 @@ async def upload_book(request: Request, data: Annotated[BookFormData, Form()]):
 
     # Validate uploaded book file
     file = data.file
-    if file.content_type not in ("application/epub+zip", "application/pdf"):
+    print("File Content", file)
+    if file.content_type not in ("application/epub", "application/epub+zip", "application/pdf"):
         return JSONResponse(status_code=400, content={"message": "Invalid file type. Only EPUB or PDF files are allowed."})
 
     # Get user email
@@ -195,3 +198,55 @@ async def delete_book(request: Request, book_id: str):
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_501_INTERNAL_SERVER_ERROR, detail=str(e))
         
+
+# Pydantic model for the input
+class CreateHighlight(BaseModel):
+    text: str
+    location: str
+
+# POST /book/:id/highlight - Add a highlight to the book's metadata
+@router.post("/book/{book_id}/highlight", tags=["book"])
+async def add_book_highlight(request: Request, book_id: str, body: CreateHighlight):
+    # Get user email from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+
+    access_token = auth_header.split(" ")[1]
+    user_email = get_user_info(access_token)['email']
+    owner_id = hash_email(user_email)
+
+    # Retrieve the book metadata from MongoDB
+    collection = get_mongodb_collection(owner_id)
+    book_metadata = collection.find_one({"_id": book_id})
+
+    if not book_metadata:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
+
+    # Create a new highlight with UUID
+    highlight_id = str(uuid.uuid4())
+    highlight = {
+        "id": highlight_id,
+        "text": body.text,
+        "location": body.location
+    }
+
+    # Add the new highlight to the existing book's metadata
+    if "highlights" not in book_metadata:
+        book_metadata["highlights"] = []
+
+    book_metadata["highlights"].append(highlight)
+
+    # Update the book metadata in MongoDB
+    collection.update_one({"_id": book_id}, {"$set": {"highlights": book_metadata["highlights"]}})
+
+    # Response on success
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "message": "Successfully saved highlight!",
+            "highlightId": highlight_id,
+            "highlightText": highlight["text"],
+            "bookId": book_id
+        }
+    )

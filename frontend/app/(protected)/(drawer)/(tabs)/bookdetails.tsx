@@ -8,7 +8,7 @@ import {
   StyleSheet,
   TextInput,
   Button,
-  Modal
+  Modal,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { getUser } from "@/utilities/auth";
@@ -58,7 +58,7 @@ export default function BookDetailsScreen() {
             headers: {
               Authorization: `Bearer ${user.accessToken}`,
             },
-          }
+          },
         );
 
         if (response.ok) {

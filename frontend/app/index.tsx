@@ -5,15 +5,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Text,
-} from 'react-native';
-import { useState, useEffect } from 'react';
-import { Redirect } from 'expo-router';
+} from "react-native";
+import { useState, useEffect } from "react";
+import { Redirect } from "expo-router";
 
-import { Auth, User, getUser } from '@/utilities/auth';
-import Loading from '@/components/Loading';
+import { Auth, User, getUser } from "@/utilities/auth";
+import Loading from "@/components/Loading";
 
 export default function LandingPage() {
-
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -24,41 +23,42 @@ export default function LandingPage() {
       setLoading(false);
 
       if (!user) {
-        console.info('No user was found');
+        console.info("No user was found");
         return;
       }
 
       // Log the user info for debugging purposes
-      console.log({ user }, 'User Info');
+      console.log({ user }, "User Info");
     }
 
     init();
   }, []);
 
   if (loading) {
-    return <Loading message='Loading WordVision...'/>
-  }
-
-  else if (user) {
-    return <Redirect href="/library" />
-  }
-
-  else {
+    return <Loading message="Loading WordVision..." />;
+  } else if (user) {
+    return <Redirect href="/library" />;
+  } else {
     return (
       <View style={styles.container}>
         <Image
-          source={require('@/assets/images/landingPage_image.jpg')}
+          source={require("@/assets/images/landingPage_image.jpg")}
           style={styles.Logo}
         />
 
         <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => Auth.federatedSignIn()} style={styles.uploadButton}>
+          <TouchableOpacity
+            onPress={() => Auth.federatedSignIn()}
+            style={styles.uploadButton}
+          >
             <Text style={styles.buttonText}>Get Started</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.textContainer}>
-          <Text style={styles.centerText}>Let's start a Journey of New gen Book Reader</Text>
+          <Text style={styles.centerText}>
+            Let's start a Journey of New gen Book Reader
+          </Text>
         </View>
       </View>
     );
@@ -68,12 +68,12 @@ export default function LandingPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   Logo: {
-    height: '100%',
-    width: '100%',
-    position: 'absolute',
+    height: "100%",
+    width: "100%",
+    position: "absolute",
   },
   headerRight: {
     position: "absolute",
@@ -94,13 +94,13 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 1,
-    position: 'absolute',
-    top: '45%',
-    left: '33%',
-    backgroundColor: 'black',
+    position: "absolute",
+    top: "45%",
+    left: "33%",
+    backgroundColor: "black",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 32, // Larger text
     fontWeight: "bold",
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   loadingContainer: {
@@ -118,4 +118,3 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
-
