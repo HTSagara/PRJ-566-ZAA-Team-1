@@ -34,7 +34,7 @@ export default function user() {
 
   useEffect(() => {
     async function init() {
-      console.debug("inside user init()")
+      console.debug("inside user init()");
 
       const url = `${backendApiUrl}/user`;
       console.debug(`Calling GET ${url}...`);
@@ -54,8 +54,7 @@ export default function user() {
         setBirthdate(data.birthdate);
         setEmail(data.email);
         setOriginalData(data); // Set the initial state
-      } 
-      catch (err) {
+      } catch (err) {
         console.error("Unable to call GET /user", { err });
       }
 
@@ -86,8 +85,7 @@ export default function user() {
 
       // Update original data
       setOriginalData({ name, email, birthdate });
-    } 
-    catch (err) {
+    } catch (err) {
       console.error("Failed to update user details", { err });
     }
   };
@@ -103,7 +101,7 @@ export default function user() {
   const handleDelete = async () => {
     // Ask for confirmation before deletion
     const confirmed = window.confirm(
-      "So SAD to see you go :( Sure to DELETE your account?"
+      "So SAD to see you go :( Sure to DELETE your account?",
     );
 
     if (confirmed) {
@@ -148,11 +146,11 @@ export default function user() {
           User Profile
         </ThemedText>
 
-        {loading ? 
+        {loading ? (
           <View style={styles.inputContainer}>
             <ThemedText type="default">Loading user info...</ThemedText>
           </View>
-          : 
+        ) : (
           <>
             <View style={styles.inputContainer}>
               <ThemedText type="default">Email</ThemedText>
@@ -236,8 +234,7 @@ export default function user() {
               )}
             </View>
           </>
-        }
-
+        )}
       </ThemedView>
     </ParallaxScrollView>
   );
