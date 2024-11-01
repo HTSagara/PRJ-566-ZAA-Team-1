@@ -13,6 +13,9 @@ load_dotenv()
 hf_api_token = os.getenv("HF_API_TOKEN")
 hf_space = os.getenv("HF_SPACE")
 
+if hf_api_token is None or hf_space is None:
+    raise EnvironmentError("Missing environement variables for hugging face")
+
 # AWS S3 Configuration
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 AWS_REGION = os.getenv("COGNITO_REGION")

@@ -153,7 +153,7 @@ export default function BookDetailsScreen() {
     try {
       const user = await getUser();
       if (!user) {
-        Alert.alert("Error", "No user found");
+        Alert.alert("Error", "No user found.");
         return;
       }
 
@@ -173,8 +173,8 @@ export default function BookDetailsScreen() {
         alert(`Error while deleting book: ${error.message}`);
       }
     } catch (err) {
-      console.log(`Exception while deleting book: ${err}`);
-      Alert.alert("Error", "Failed to delete book");
+      console.log(`Exception while deleting book: ${err}.`);
+      Alert.alert("Error", "Failed to delete book.");
     }
   };
 
@@ -256,6 +256,18 @@ export default function BookDetailsScreen() {
               size={24}
               style={{
                 color: isChecked ? "blue" : "gray",
+                marginHorizontal: 10,
+              }}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => {
+            navigation.navigate("highlights", { bookId: bookId });
+          }}>
+            <Icon
+              name="quote-left"
+              size={24}
+              style={{
+                color: "blue",
                 marginHorizontal: 10,
               }}
             />

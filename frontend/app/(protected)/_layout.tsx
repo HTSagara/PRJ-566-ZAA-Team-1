@@ -10,7 +10,7 @@ export default function DrawerLayout() {
 
   useEffect(() => {
     async function init() {
-      console.log("inside protected init()");
+      // console.log("inside protected init()");
 
       const user = await getUser();
       setUser(user);
