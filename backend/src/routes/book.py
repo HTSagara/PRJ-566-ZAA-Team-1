@@ -278,7 +278,7 @@ async def get_all_highlights(request: Request, book_id: str):
         return JSONResponse(content=highlights)
     
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_501_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 # GET /book/:id/highlight - Get highlight by id
 @router.get("/book/{book_id}/highlight/{highlight_id}", tags=["book"])
