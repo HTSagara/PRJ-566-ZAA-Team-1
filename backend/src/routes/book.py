@@ -252,7 +252,7 @@ async def add_book_highlight(request: Request, book_id: str, body: CreateHighlig
     )
 
 # GET /book/:id/highlight - Get highlight by id
-@router.get("/books/{book_id}/highlight/{highlight_id}", tags=["book"])
+@router.get("/book/{book_id}/highlight/{highlight_id}", tags=["book"])
 async def get_book_highlight(request: Request, book_id: str, highlight_id: str):
     # Get user email from Authorization header
     auth_header = request.headers.get("Authorization")
