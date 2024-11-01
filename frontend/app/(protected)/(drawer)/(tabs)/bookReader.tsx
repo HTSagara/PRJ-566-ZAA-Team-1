@@ -36,7 +36,11 @@ const BookReader: React.FC = () => {
   const [loading, setLoading] = useState(true); // Handle loading
   const [error, setError] = useState<string | null>(null); // Handle error
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [saveHighlightError, setSaveHighlightError] = useState<boolean>(false);
+
+  const [saveError, setSaveError] = useState<boolean>(false);
+  const [saveMessage, setSaveMessage] = useState<string>("Saving highlight..." );
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string>("Error saving highlight.");
+
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -144,10 +148,58 @@ const BookReader: React.FC = () => {
 
   const handleHighlight = async () => {
     if (rendition && selection) {
+      setSaveMessage("Saving highlight...")
+      setSaveErrorMessage("Error saving highlight.")
       setModalVisible(true);
 
       try {
         const url = `http://localhost:8000/book/${bookId}/highlight`;
+        const response = await fetch(url, {
+          method: "POST",
+          body: JSON.stringify(selection),
+          headers: user.authorizationHeaders(),
+        });
+
+        if (response.status === 200) {
+          setModalVisible(false);
+
+          rendition.annotations.add(
+            "highlight",
+            selection.location,
+            undefined,
+            undefined,
+            "hl",
+            {
+              fill: "red",
+              "fill-opacity": "0.5",
+              "mix-blend-mode": "multiply",
+            }
+          );
+
+          // getContents() actually returns Contents[] and not Contents
+          // @ts-ignore: because return type of getContents() is outdated
+          rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
+          setSaveError(false);
+        } else {
+          console.error("Failed to visualize highlight", response);
+          setSaveError(true);
+        }
+      } catch (error) {
+        console.error("Failed to visualize highlight", error);
+        setSaveError(true);
+      }
+    }
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  };
+
+  const handleRenderImage = async () => {
+    if (rendition && selection) {
+      setSaveMessage("Visualizing highlight...")
+      setSaveErrorMessage("Error saving highlight.")
+      setModalVisible(true);
+
+      try {
+        const url = `http://localhost:8000/book/${bookId}/highlight?image=true`;
         const response = await fetch(url, {
           method: "POST",
           body: JSON.stringify(selection),
@@ -174,54 +226,17 @@ const BookReader: React.FC = () => {
           // getContents() actually returns Contents[] and not Contents
           // @ts-ignore: because return type of getContents() is outdated
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
+          setSaveError(false);
         } else {
           console.error("Failed to upload book", response);
-          setSaveHighlightError(true);
+          // setSaveHighlightError(true);
+          setSaveError(true);
         }
       } catch (error) {
-        console.error("Error uploading book:", error);
-        setSaveHighlightError(true);
+          console.error("Error uploading book:", error);
+          // setSaveHighlightError(true);
+          setSaveError(true);
       }
-    }
-    setContextMenu({ visible: false, x: 0, y: 0 });
-  };
-
-  const handleRenderImage = async () => {
-    try {
-      const url = `http://localhost:8000/generate-image`;
-      const response = await fetch(url, {
-        method: "POST",
-        body: JSON.stringify({ prompt: selection?.text }),
-        headers: {
-          Authorization: user.authorizationHeaders().Authorization, // Only pass the Authorization header
-          "Content-Type": "application/json",
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const imageUrl = data.s3_url; // Retrieve the S3 URL
-
-        // Display the generated image in the app
-        Alert.alert(
-          "Image Generated",
-          "The image has been generated and saved to S3.",
-          [
-            {
-              text: "View Image",
-              onPress: () => {
-                // Navigate or show the image in a new view
-                setGeneratedImageUrl(imageUrl); // Save the image URL in state
-              },
-            },
-          ]
-        );
-      } else {
-        console.error("Failed to generate image:", response.statusText);
-        Alert.alert("Error", "Failed to generate image.");
-      }
-    } catch (error) {
-      console.error("Error generating image:", error);
-      Alert.alert("Error", "An error occurred while generating the image.");
     }
 
     setContextMenu({ visible: false, x: 0, y: 0 });
@@ -305,8 +320,8 @@ const BookReader: React.FC = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalView}>
-            {!saveHighlightError ? (
-              <Loading message="Saving highlight..." />
+            {!saveError ? (
+              <Loading message={saveMessage}/>
             ) : (
               <>
                 <TouchableOpacity
@@ -315,7 +330,7 @@ const BookReader: React.FC = () => {
                 >
                   <Text style={styles.closeButtonText}>X</Text>
                 </TouchableOpacity>
-                <Text>Error saving highlight.</Text>
+                <Text>{saveErrorMessage}</Text>
               </>
             )}
           </View>
