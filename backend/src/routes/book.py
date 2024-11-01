@@ -277,22 +277,11 @@ async def get_book_highlight(request: Request, book_id: str, highlight_id: str):
     if not highlight:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Highlight not found")
 
-    # Generate a presigned URL for the highlight image if available
-    img_s3_key = f"{owner_id}/highlights/{highlight_id}.png"
-    try:
-        img_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': S3_BUCKET_NAME, 'Key': img_s3_key},
-            ExpiresIn=3600  # URL expires in 1 hour
-        )
-    except NoCredentialsError:
-        img_url = None
-
     # highlight metadata
     response_content = {
         "id": highlight["id"],
         "text": highlight["text"],
-        "imgUrl": img_url or "Image not available",
+        "imgUrl": highlight.get("imgUrl"),
         "location": highlight.get("location", "Unknown location")
     }
 
