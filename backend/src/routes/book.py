@@ -1,23 +1,20 @@
-# src/routes/book.py
+import os
+import boto3
+import uuid
+
 from fastapi import APIRouter, HTTPException, UploadFile, Form, Request, status, Depends
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from auth import auth_middleware, get_user_info
+from utils.text2image import generate_image
 from database.book_metadata import extract_metadata
 from database.mongodb import get_mongodb_collection
 from models.book import Book, extract_metadata, hash_email
-from database.s3_db import read_file_data, delete_file_data 
+from database.s3_db import delete_file_data 
 from io import BytesIO
-import boto3
 from botocore.exceptions import NoCredentialsError
 from dotenv import load_dotenv
-import os
-
 from pydantic import BaseModel
 from typing import Annotated, Optional
-
-import uuid
-
-print(f"hello from book route")
 
 load_dotenv()
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
@@ -94,7 +91,7 @@ async def retrieve_books(request: Request):
 
     return books
 
-# GET /book/info/{id}
+# GET /book/info/{id} this route gets book metadata from mongodb
 @router.get("/book/info/{book_id}", tags=["book"])
 async def get_book_info(request: Request, book_id: str):
     # Get user email from Authorization header
@@ -119,6 +116,7 @@ async def get_book_info(request: Request, book_id: str):
 
     return JSONResponse(content=book_metadata)
 
+# GET book content from amazon S3 bucket  
 @router.get("/book/{book_id}", tags=["book"])
 async def get_book_presigned_url(request: Request, book_id: str):
     auth_header = request.headers.get("Authorization")
@@ -230,7 +228,7 @@ class CreateHighlight(BaseModel):
 
 # POST /book/:id/highlight - Add a highlight to the book's metadata
 @router.post("/book/{book_id}/highlight", tags=["book"])
-async def add_book_highlight(request: Request, book_id: str, body: CreateHighlight):
+async def add_book_highlight(request: Request, book_id: str, body: CreateHighlight, image: bool = False):
     # Get user email from Authorization header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -247,11 +245,14 @@ async def add_book_highlight(request: Request, book_id: str, body: CreateHighlig
     if not book_metadata:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
 
+    imgUrl = None if not image else generate_image(body.text)
+
     # Create a new highlight with UUID
     highlight_id = str(uuid.uuid4())
     highlight = {
         "id": highlight_id,
         "text": body.text,
+        "imgUrl": imgUrl,
         "location": body.location
     }
 
@@ -271,13 +272,14 @@ async def add_book_highlight(request: Request, book_id: str, body: CreateHighlig
             "message": "Successfully saved highlight!",
             "highlightId": highlight_id,
             "highlightText": highlight["text"],
+            "imgUrl": imgUrl,
             "bookId": book_id
         }
     )
 
-# GET /book/:id/highlight - Get highlight by id
-@router.get("/book/{book_id}/highlight/{highlight_id}", tags=["book"])
-async def get_book_highlight(request: Request, book_id: str, highlight_id: str):
+# GET route for Retrieving all the highlights created for a book
+@router.get("/book/{book_id}/highlights", tags=["book"])
+async def get_all_highlights(request: Request, book_id: str):
     # Get user email from Authorization header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -285,6 +287,37 @@ async def get_book_highlight(request: Request, book_id: str, highlight_id: str):
 
     access_token = auth_header.split(" ")[1]
     user_email = get_user_info(access_token)['email']
+
+    try:
+        # Hash the user's email to match the collection name (ownerId)
+        ownerId = hash_email(user_email)
+    
+        # Getting the metaData which also have highlights
+        collection = get_mongodb_collection(ownerId)
+        result = collection.find_one({"_id": book_id}, {"highlights": 1, "_id": 0})
+        
+        if not result:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
+
+        highlights = result.get("highlights", [])
+
+        return JSONResponse(content=highlights)
+    
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+# GET /book/:id/highlight - Get highlight by id
+@router.get("/book/{book_id}/highlight/{highlight_id}", tags=["book"])
+async def get_book_highlight(request: Request, book_id: str, highlight_id: str):
+
+    # Get user email from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+
+    access_token = auth_header.split(" ")[1]
+    user_email = get_user_info(access_token)['email']
+
     owner_id = hash_email(user_email)
 
     # Retrieve the book metadata from MongoDB
