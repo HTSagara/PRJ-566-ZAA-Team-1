@@ -203,7 +203,7 @@ class CreateHighlight(BaseModel):
 
 # POST /book/:id/highlight - Add a highlight to the book's metadata
 @router.post("/book/{book_id}/highlight", tags=["book"])
-async def add_book_highlight(request: Request, book_id: str, body: CreateHighlight, image: bool):
+async def add_book_highlight(request: Request, book_id: str, body: CreateHighlight, image: bool = False):
     # Get user email from Authorization header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
