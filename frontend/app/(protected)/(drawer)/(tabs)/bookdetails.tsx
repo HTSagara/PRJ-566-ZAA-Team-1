@@ -8,7 +8,7 @@ import {
   StyleSheet,
   TextInput,
   Button,
-  Modal
+  Modal,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { getUser } from "@/utilities/auth";
@@ -16,7 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import {router} from "expo-router";
+import { router } from "expo-router";
 
 // Define the types for the book object and route params
 interface Book {
@@ -28,7 +28,7 @@ interface Book {
 }
 
 export default function BookDetailsScreen() {
-  const [book, setBook] = useState<Book | null>(null); // Properly typed book state
+  const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const [isStarred, setIsStarred] = useState(false);
@@ -38,12 +38,10 @@ export default function BookDetailsScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  // Use route params with proper typing
   const route = useRoute<RouteProp<RootStackParamList, "bookReader">>();
-  const { bookId } = route.params; // Now TypeScript understands bookId
+  const { bookId } = route.params;
   const backendURL = process.env.EXPO_PUBLIC_BACKEND_API_URL;
 
-  // Load saved icons and notes from AsyncStorage when page is loaded
   useEffect(() => {
     const fetchBookDetails = async () => {
       try {
@@ -60,12 +58,12 @@ export default function BookDetailsScreen() {
             headers: {
               Authorization: `Bearer ${user.accessToken}`,
             },
-          }
+          },
         );
 
         if (response.ok) {
           const data = await response.json();
-          setBook(data); // Store book details in state
+          setBook(data);
         } else {
           Alert.alert("Error", "Failed to fetch book details");
         }
@@ -76,7 +74,6 @@ export default function BookDetailsScreen() {
       }
     };
 
-    // Fetch stored notes and icon states for book
     const fetchStoredData = async () => {
       try {
         const storedNotes = await AsyncStorage.getItem(`notes_${bookId}`);
@@ -96,7 +93,7 @@ export default function BookDetailsScreen() {
     };
 
     fetchBookDetails();
-    fetchStoredData(); // Load stored notes and icon states
+    fetchStoredData();
   }, [bookId]);
 
   if (loading) {
@@ -116,87 +113,78 @@ export default function BookDetailsScreen() {
     return `${size} Bytes`;
   };
 
-  // Save notes to AsyncStorage
   const handleNotesChange = async (text: string) => {
     setNotes(text);
     try {
-      await AsyncStorage.setItem(`notes_${bookId}`, text); // Save notes with `notes_<bookId>`
+      await AsyncStorage.setItem(`notes_${bookId}`, text);
     } catch (error) {
       console.error("Failed to save notes to AsyncStorage:", error);
     }
   };
 
-  // Toggle functions for icons
   const toggleStar = async () => {
     const newState = !isStarred;
     setIsStarred(newState);
-    await AsyncStorage.setItem(`isStarred_${bookId}`, JSON.stringify(newState)); // Persist state
+    await AsyncStorage.setItem(`isStarred_${bookId}`, JSON.stringify(newState));
   };
 
   const toggleClock = async () => {
     const newState = !isClocked;
     setIsClocked(newState);
+    if (newState) setIsChecked(false);
     await AsyncStorage.setItem(`isClocked_${bookId}`, JSON.stringify(newState));
+    await AsyncStorage.setItem(`isChecked_${bookId}`, JSON.stringify(false));
   };
 
   const toggleCheck = async () => {
     const newState = !isChecked;
     setIsChecked(newState);
+    if (newState) setIsClocked(false);
     await AsyncStorage.setItem(`isChecked_${bookId}`, JSON.stringify(newState));
+    await AsyncStorage.setItem(`isClocked_${bookId}`, JSON.stringify(false));
   };
 
-  // Deleting button handle
   const handleDeleteAction = async () => {
     setModelVisible(true);
-  }
+  };
 
-  // handle user input on confirmation
   const handleConfirm = async () => {
-    console.log("inside confirm model")
     setModelVisible(false);
-    // calling the backend route for delete
-      try {
-        const user = await getUser();
-        if (!user) {
-          Alert.alert("Error", "No user found");
-          return;
-        }
-
-        const response = await fetch(backendURL + `/book/${bookId}`,
-            {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${user.accessToken}`,
-              },
-            });
-
-        if(response.ok) {
-          const data = await response.json();
-          alert(data.message);
-          router.navigate("./library");
-        }
-        else
-        {
-          const error = await response.json();
-          alert(`Error while deleting book: ${error.message}`);
-        }
+    try {
+      const user = await getUser();
+      if (!user) {
+        Alert.alert("Error", "No user found");
+        return;
       }
-      catch (err)
-      {
-        console.log(`Exception while deleting book: ${err}`);
-        Alert.alert("Error", "Failed to delete book");
-      }
-  }
 
-  // handle user input on cancel
+      const response = await fetch(backendURL + `/book/${bookId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(data.message);
+        router.navigate("./library");
+      } else {
+        const error = await response.json();
+        alert(`Error while deleting book: ${error.message}`);
+      }
+    } catch (err) {
+      console.log(`Exception while deleting book: ${err}`);
+      Alert.alert("Error", "Failed to delete book");
+    }
+  };
+
   const handleCancel = () => {
     setModelVisible(false);
     setIsLoading(false);
-  }
+  };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="chevron-left" size={24} color="#000" />
@@ -212,23 +200,24 @@ export default function BookDetailsScreen() {
       </View>
 
       <Modal
-          transparent={true}
-          visible={modelVisible}
-          animationType="slide"
-          onRequestClose={handleCancel}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalText}>{"Are you sure you want to Delete this book?"}</Text>
-              <View style={styles.buttonContainer}>
-                <Button title="Confirm" onPress={handleConfirm} />
-                <Button title="Cancel" onPress={handleCancel} />
-              </View>
+        transparent={true}
+        visible={modelVisible}
+        animationType="slide"
+        onRequestClose={handleCancel}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalText}>
+              {"Are you sure you want to Delete this book?"}
+            </Text>
+            <View style={styles.buttonContainer}>
+              <Button title="Confirm" onPress={handleConfirm} />
+              <Button title="Cancel" onPress={handleCancel} />
             </View>
           </View>
-        </Modal>
+        </View>
+      </Modal>
 
-      {/* Book Image */}
       <View style={styles.bookImageContainer}>
         <Image
           source={{ uri: book.imgUrl || "https://placehold.co/300x450" }}
@@ -236,12 +225,10 @@ export default function BookDetailsScreen() {
         />
       </View>
 
-      {/* Book Info */}
       <View style={styles.bookInfo}>
         <Text style={styles.bookTitle}>{book.title}</Text>
         <Text style={styles.bookAuthor}>by {book.author}</Text>
 
-        {/* Action Icons */}
         <View style={styles.actionIcons}>
           <TouchableOpacity onPress={toggleStar}>
             <Icon
@@ -273,20 +260,7 @@ export default function BookDetailsScreen() {
               }}
             />
           </TouchableOpacity>
-          {/* Pencil icon, behaves like trash icon */}
-          <TouchableOpacity
-            onPress={() => Alert.alert("Edit", "Edit button pressed")}
-          >
-            <Icon
-              name="pencil"
-              size={24}
-              style={{ color: "gray", marginHorizontal: 10 }}
-            />
-          </TouchableOpacity>
-          {/* Trash icon */}
-          <TouchableOpacity
-            onPress={() => handleDeleteAction()}
-          >
+          <TouchableOpacity onPress={handleDeleteAction}>
             <Icon
               name="trash"
               size={24}
@@ -301,7 +275,6 @@ export default function BookDetailsScreen() {
         </Text>
       </View>
 
-      {/* Notes Section */}
       <View style={styles.notesSection}>
         <Text style={styles.notesHeader}>Notes:</Text>
         <TextInput
@@ -390,28 +363,27 @@ const styles = StyleSheet.create({
     color: "#333",
     minHeight: 100,
   },
-
   modalOverlay: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-},
-modalContainer: {
-  width: 350,
-  padding: 30,
-  backgroundColor: 'white',
-  borderRadius: 10,
-  elevation: 5,
-},
-modalText: {
-  fontSize: 18,
-  textAlign: 'center',
-  marginBottom: 20,
-},
-buttonContainer: {
-  marginTop: 20,
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-},
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContainer: {
+    width: 350,
+    padding: 30,
+    backgroundColor: "white",
+    borderRadius: 10,
+    elevation: 5,
+  },
+  modalText: {
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  buttonContainer: {
+    marginTop: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
 });

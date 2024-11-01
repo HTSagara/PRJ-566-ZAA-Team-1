@@ -1,5 +1,14 @@
 import React, { useContext, useState, useEffect, useRef } from "react";
-import { Modal, View, Text, Alert, ActivityIndicator, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  Modal,
+  View,
+  Text,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+} from "react-native";
 import { ReactReader } from "react-reader";
 import { useRoute } from "@react-navigation/native";
 import { getUser } from "@/utilities/auth";
@@ -10,13 +19,13 @@ import Loading from "@/components/Loading";
 import { AuthContext, type User } from "@/utilities/auth";
 
 interface Selection {
-  text: string
-  location: string
+  text: string;
+  location: string;
 }
 
 const BookReader: React.FC = () => {
-
   const user = useContext(AuthContext) as User;
+
   const ctxMenuRef = useRef<any>(null);
 
   const route = useRoute();
@@ -28,10 +37,16 @@ const BookReader: React.FC = () => {
   const [error, setError] = useState<string | null>(null); // Handle error
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [saveHighlightError, setSaveHighlightError] = useState<boolean>(false);
-
-  const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number }>({ visible: false, x: 0, y: 0 });
-  const [selection, setSelection] = useState<Selection | null>(null)
-  const [rendition, setRendition] = useState<Rendition | undefined>(undefined)
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+  }>({ visible: false, x: 0, y: 0 });
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [rendition, setRendition] = useState<Rendition | undefined>(undefined);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     if (!bookId) {
@@ -77,116 +92,140 @@ const BookReader: React.FC = () => {
 
   useEffect(() => {
     if (rendition) {
-
-      function setContextMenuHandler(section: Section, view: any) {
-
-        const viewX = view.element.getBoundingClientRect().x;
-        const viewY = view.element.getBoundingClientRect().y;
-
+      function setContextMenuHandler(_: Section, view: any) {
         const iframe = view.iframe as HTMLIFrameElement | null;
         const iframeDoc = iframe?.contentDocument;
         const iframeWindow = iframe?.contentWindow;
 
-
         if (iframeDoc && iframeWindow) {
-
           function contextMenuHandler(event: MouseEvent) {
             event.preventDefault();
             const textSelection = iframeWindow?.getSelection();
             if (textSelection && textSelection.toString().length > 0) {
-              const x = event.screenX - (viewX * 0.25)
-              const y = event.screenY - (viewY * 2.5)
+              const x = event.screenX - window.screenX + 5;
+              const y = event.screenY - window.screenX - 275;
               setContextMenu({ visible: true, x, y });
             }
           }
 
-          function dismissMenuHandler(event: MouseEvent) {
-            if (ctxMenuRef.current && !(ctxMenuRef.current as HTMLElement).contains(event.target as Node) && event.button == 0) {
+          function dismissMenuHandler(e: MouseEvent) {
+            const menu = ctxMenuRef.current as HTMLElement;
+            if (menu && !menu.contains(e.target as Node) && e.button == 0) {
               setContextMenu({ visible: false, x: 0, y: 0 });
             }
           }
 
-          // Right-click event inside the iframe
-          iframeDoc.addEventListener('contextmenu', contextMenuHandler)
-          iframeDoc.addEventListener("mousedown", dismissMenuHandler)
-        }
-        else {
+          iframeDoc.addEventListener("contextmenu", contextMenuHandler);
+          iframeDoc.addEventListener("mousedown", dismissMenuHandler);
+        } else {
           console.error("Unable to find epubjs iframe");
         }
-
       }
 
-      function setRenderSelection(cfiRange: string, contents: Contents) {
+      function setRenderSelection(cfiRange: string, _: Contents) {
         if (rendition) {
           const selection: Selection = {
             text: rendition.getRange(cfiRange).toString(),
             location: cfiRange,
-          }
-          console.log(selection)
-          setSelection(selection)
+          };
+          setSelection(selection);
         }
       }
 
-      rendition.on("rendered", setContextMenuHandler)
-      rendition.on('selected', setRenderSelection)
+      rendition.on("rendered", setContextMenuHandler);
+      rendition.on("selected", setRenderSelection);
 
       return () => {
-        rendition?.off("rendered", setContextMenuHandler)
-        rendition?.off('selected', setRenderSelection)
-      }
+        rendition?.off("rendered", setContextMenuHandler);
+        rendition?.off("selected", setRenderSelection);
+      };
     }
-  }, [setSelection, rendition])
+  }, [setSelection, rendition]);
 
   const handleHighlight = async () => {
     if (rendition && selection) {
-
       setModalVisible(true);
 
       try {
-        const response = await fetch(`http://localhost:8000/book/${bookId}/highlight`, {
+        const url = `http://localhost:8000/book/${bookId}/highlight`;
+        const response = await fetch(url, {
           method: "POST",
           body: JSON.stringify(selection),
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
+          headers: user.authorizationHeaders(),
         });
 
         if (response.status === 200) {
-          console.log("Book uploaded successfully!")
-          console.log(response.json())
-          setModalVisible(false)
-        } 
-        else {
-          console.error("Failed to upload book", response)
+          setModalVisible(false);
+
+          rendition.annotations.add(
+            "highlight",
+            selection.location,
+            {},
+            (e: MouseEvent) =>
+              console.log("click on selection", selection.location, e),
+            "hl",
+            {
+              fill: "red",
+              "fill-opacity": "0.5",
+              "mix-blend-mode": "multiply",
+            }
+          );
+
+          // getContents() actually returns Contents[] and not Contents
+          // @ts-ignore: because return type of getContents() is outdated
+          rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
+        } else {
+          console.error("Failed to upload book", response);
           setSaveHighlightError(true);
         }
-      } 
-      catch (error) {
+      } catch (error) {
         console.error("Error uploading book:", error);
         setSaveHighlightError(true);
-      } 
-
-      rendition.annotations.add(
-        'highlight',
-        selection.location,
-        {},
-        (e: MouseEvent) => console.log('click on selection', selection.location, e),
-        'hl',
-        { fill: 'red', 'fill-opacity': '0.5', 'mix-blend-mode': 'multiply' }
-      )
-
-      // getContents() actually returns Contents[] and not Contents
-      // @ts-ignore: because return type of getContents() is outdated
-      rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
+      }
     }
     setContextMenu({ visible: false, x: 0, y: 0 });
   };
 
-  const handleRenderImage = () => {
-    Alert.alert("Render Image", "Render Image option selected");
+  const handleRenderImage = async () => {
+    try {
+      const url = `http://localhost:8000/generate-image`;
+      const response = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify({ prompt: selection?.text }),
+        headers: {
+          Authorization: user.authorizationHeaders().Authorization, // Only pass the Authorization header
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const imageUrl = data.s3_url; // Retrieve the S3 URL
+
+        // Display the generated image in the app
+        Alert.alert(
+          "Image Generated",
+          "The image has been generated and saved to S3.",
+          [
+            {
+              text: "View Image",
+              onPress: () => {
+                // Navigate or show the image in a new view
+                setGeneratedImageUrl(imageUrl); // Save the image URL in state
+              },
+            },
+          ]
+        );
+      } else {
+        console.error("Failed to generate image:", response.statusText);
+        Alert.alert("Error", "Failed to generate image.");
+      }
+    } catch (error) {
+      console.error("Error generating image:", error);
+      Alert.alert("Error", "An error occurred while generating the image.");
+    }
+
     setContextMenu({ visible: false, x: 0, y: 0 });
   };
-
 
   // Show loading indicator while fetching
   if (loading) {
@@ -210,11 +249,10 @@ const BookReader: React.FC = () => {
   // Display the ReactReader only when the bookUrl is ready
   return (
     <View style={{ flex: 1 }}>
-
       {bookUrl ? (
         <ReactReader
           url={bookUrl}
-          epubInitOptions={{openAs: 'epub'}}
+          epubInitOptions={{ openAs: "epub" }}
           location={location}
           locationChanged={(epubcfi: string) => setLocation(epubcfi)}
           getRendition={(rendition: Rendition) => setRendition(rendition)}
@@ -224,17 +262,39 @@ const BookReader: React.FC = () => {
       )}
 
       {contextMenu.visible && (
-        <View style={[styles.contextMenu, { top: contextMenu.y, left: contextMenu.x }]} ref={ctxMenuRef}>
-          <TouchableOpacity style={styles.contextMenuItem} onPress={handleHighlight}>
+        <View
+          style={[
+            styles.contextMenu,
+            { top: contextMenu.y, left: contextMenu.x },
+          ]}
+          ref={ctxMenuRef}
+        >
+          <TouchableOpacity
+            style={styles.contextMenuItem}
+            onPress={handleHighlight}
+          >
             <Text>Highlight</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.contextMenuItem} onPress={handleRenderImage}>
+          <TouchableOpacity
+            style={styles.contextMenuItem}
+            onPress={handleRenderImage}
+          >
             <Text>Visualize</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Modal for file upload */}
+      {generatedImageUrl && (
+        <View style={{ margin: 20 }}>
+          <Text>Generated Image:</Text>
+          <Image
+            source={{ uri: generatedImageUrl }}
+            style={{ width: 200, height: 200 }}
+            resizeMode="contain"
+          />
+        </View>
+      )}
+
       <Modal
         animationType="slide"
         transparent={true}
@@ -245,11 +305,19 @@ const BookReader: React.FC = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalView}>
-          {!saveHighlightError ?
-          <Loading message="Saving highlight..."/>
-          :
-          <Text>Error saving highlight.</Text>
-          }
+            {!saveHighlightError ? (
+              <Loading message="Saving highlight..." />
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>X</Text>
+                </TouchableOpacity>
+                <Text>Error saving highlight.</Text>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -292,7 +360,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  closeButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 10,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#000",
+  },
 });
 
 export default BookReader;
-

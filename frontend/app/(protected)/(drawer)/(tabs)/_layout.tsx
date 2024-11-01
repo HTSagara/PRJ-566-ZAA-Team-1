@@ -35,6 +35,7 @@ export default function TabLayout() {
         options={{
           tabBarButton: () => null, // Hides the tab button
           headerShown: false,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
