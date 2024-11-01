@@ -206,7 +206,7 @@ class CreateHighlight(BaseModel):
 async def add_book_highlight(request: Request, book_id: str, body: CreateHighlight, image: bool):
     # Get user email from Authorization header
     auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswie6f16fa1577b736d1d04271ab9d937755855acc49073ed53a783e2840baedc4bth("Bearer "):
+    if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
 
     access_token = auth_header.split(" ")[1]
