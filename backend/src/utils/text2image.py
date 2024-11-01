@@ -17,7 +17,7 @@ s3_client = boto3.client('s3', region_name=os.getenv(AWS_REGION))
 # Initialize the Hugging Face Space client
 client = Client(hf_space, hf_api_token)
 
-async def generate_image(prompt: str):
+def generate_image(prompt: str):
 
     # Send prompt to Hugging Face Space and receive the result
     result = client.predict(
