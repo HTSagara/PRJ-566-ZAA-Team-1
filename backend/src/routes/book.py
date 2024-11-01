@@ -93,7 +93,6 @@ async def retrieve_books(request: Request):
         book['id'] = str(book.pop('_id'))
 
     return books
-    
 
 # GET /book/info/{id}
 @router.get("/book/info/{book_id}", tags=["book"])
@@ -120,7 +119,6 @@ async def get_book_info(request: Request, book_id: str):
 
     return JSONResponse(content=book_metadata)
 
-  
 @router.get("/book/{book_id}", tags=["book"])
 async def get_book_presigned_url(request: Request, book_id: str):
     auth_header = request.headers.get("Authorization")
@@ -197,7 +195,33 @@ async def delete_book(request: Request, book_id: str):
 
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_501_INTERNAL_SERVER_ERROR, detail=str(e))
-        
+
+# Delete Highlight API
+@router.delete("/book/{bookid}/highlight/{highlightid}", tags=["highlight"])
+async def delete_highlight(request: Request, bookid: str, highlightid: str):
+    # Get user email from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+    access_token = auth_header.split(" ")[1]
+    user_email = get_user_info(access_token)['email']
+
+    # Hash the user's email to match the collection name (ownerId)
+    owner_id = hash_email(user_email)
+
+    # Retrieve books from MongoDB based on the owner's hashed email
+    collection = get_mongodb_collection(owner_id)
+
+    # Attempt to delete the highlight from the book's metadata
+    result = collection.update_one(
+        {"_id": bookid},
+        {"$pull": {"highlights": {"id": highlightid}}}
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Highlight not found")
+
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Successfully deleted highlight!"})
 
 # Pydantic model for the input
 class CreateHighlight(BaseModel):
