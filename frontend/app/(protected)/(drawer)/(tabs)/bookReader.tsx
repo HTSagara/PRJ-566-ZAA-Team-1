@@ -21,6 +21,7 @@ import { AuthContext, type User } from "@/utilities/auth";
 interface Selection {
   text: string;
   location: string;
+  imgUrl?: string;
 }
 
 const BookReader: React.FC = () => {
@@ -33,6 +34,7 @@ const BookReader: React.FC = () => {
 
   const [location, setLocation] = useState<string | number>(0);
   const [bookUrl, setBookUrl] = useState<string | null>(null);
+  const [highlights, setHighlights] = useState<Selection[]>([])
   const [loading, setLoading] = useState(true); // Handle loading
   const [error, setError] = useState<string | null>(null); // Handle error
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -59,17 +61,12 @@ const BookReader: React.FC = () => {
       return;
     }
 
-    // Fetch the book URL
-    const fetchBookUrl = async () => {
+    // Fetch the book
+    const fetchBook = async () => {
       try {
-        const user = await getUser();
-        if (!user) {
-          Alert.alert("Error", "No user was found");
-          setLoading(false);
-          return;
-        }
 
-        const response = await fetch(`http://localhost:8000/book/${bookId}`, {
+        // Get book url
+        let response = await fetch(`http://localhost:8000/book/${bookId}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${user.accessToken}`,
@@ -83,6 +80,22 @@ const BookReader: React.FC = () => {
           console.error("Error fetching book:", response.statusText);
           setError("Failed to fetch book.");
         }
+
+        // Get book highlights
+        const url = `http://localhost:8000/book/${bookId}/highlights`;
+        response = await fetch(url, {
+          method: "GET",
+          headers: user.authorizationHeaders(),
+        });
+
+        if (response.status == 200) {
+          const data = await response.json();
+          setHighlights(data);
+        }
+        else {
+          console.error("Either failed to fetch book highlights or there are no highlights for the book");
+        }
+
       } catch (error) {
         console.error("Error fetching book:", error);
         setError("Error fetching book.");
@@ -91,11 +104,28 @@ const BookReader: React.FC = () => {
       }
     };
 
-    fetchBookUrl();
+    fetchBook();
   }, [bookId]);
 
   useEffect(() => {
-    if (rendition) {
+    if (highlights && rendition) {
+
+      // Populate book highlights in rendition
+      highlights.forEach(highlight => {
+        rendition.annotations.add(
+          "highlight",
+          highlight.location,
+          undefined,
+          undefined,
+          "hl",
+          {
+            fill: "red",
+            "fill-opacity": "0.5",
+            "mix-blend-mode": "multiply",
+          }
+        );
+      })
+
       function setContextMenuHandler(_: Section, view: any) {
         const iframe = view.iframe as HTMLIFrameElement | null;
         const iframeDoc = iframe?.contentDocument;
@@ -107,7 +137,7 @@ const BookReader: React.FC = () => {
             const textSelection = iframeWindow?.getSelection();
             if (textSelection && textSelection.toString().length > 0) {
               const x = event.screenX - window.screenX + 5;
-              const y = event.screenY - window.screenX - 275;
+              const y = event.screenY - window.screenY - 275;
               setContextMenu({ visible: true, x, y });
             }
           }
@@ -181,11 +211,11 @@ const BookReader: React.FC = () => {
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
           setSaveError(false);
         } else {
-          console.error("Failed to visualize highlight", response);
+          console.error("Failed to save highlight", response);
           setSaveError(true);
         }
       } catch (error) {
-        console.error("Failed to visualize highlight", error);
+        console.error("Failed to save highlight", error);
         setSaveError(true);
       }
     }
@@ -227,15 +257,14 @@ const BookReader: React.FC = () => {
           // @ts-ignore: because return type of getContents() is outdated
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
           setSaveError(false);
+
         } else {
-          console.error("Failed to upload book", response);
-          // setSaveHighlightError(true);
+          console.error("Failed to visualize highlight", response);
           setSaveError(true);
         }
       } catch (error) {
-          console.error("Error uploading book:", error);
-          // setSaveHighlightError(true);
-          setSaveError(true);
+        console.error("Failed to visualize highlight", error);
+        setSaveError(true);
       }
     }
 
@@ -326,7 +355,7 @@ const BookReader: React.FC = () => {
               <>
                 <TouchableOpacity
                   style={styles.closeButton}
-                  onPress={() => setModalVisible(false)}
+                  onPress={() => {setModalVisible(false); setSaveError(false);}}
                 >
                   <Text style={styles.closeButtonText}>X</Text>
                 </TouchableOpacity>
