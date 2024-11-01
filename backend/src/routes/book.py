@@ -170,7 +170,7 @@ async def delete_book(request: Request, book_id: str):
             print(f"Book with ID {book_id} successfully deleted.")
 
             # S3 key where the book file is stored
-            s3_key = f"{ownerId}/e6f16fa1577b736d1d04271ab9d937755855acc49073ed53a783e2840baedc4b{book_id}"
+            s3_key = f"{ownerId}/{book_id}"
     
             # Now deleing book from AWS s3
             response = delete_file_data(s3_key)
