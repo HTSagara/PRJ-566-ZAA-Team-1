@@ -21,12 +21,12 @@ import { AuthContext, type User } from "@/utilities/auth";
 interface Selection {
   text: string;
   location: string;
+  id: string;
   imgUrl?: string;
 }
 
 const BookReader: React.FC = () => {
   const user = useContext(AuthContext) as User;
-
   const ctxMenuRef = useRef<any>(null);
 
   const route = useRoute();
@@ -34,14 +34,14 @@ const BookReader: React.FC = () => {
 
   const [location, setLocation] = useState<string | number>(0);
   const [bookUrl, setBookUrl] = useState<string | null>(null);
-  const [highlights, setHighlights] = useState<Selection[]>([])
-  const [loading, setLoading] = useState(true); // Handle loading
-  const [error, setError] = useState<string | null>(null); // Handle error
+  const [highlights, setHighlights] = useState<Selection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-
-  const [saveError, setSaveError] = useState<boolean>(false);
-  const [saveMessage, setSaveMessage] = useState<string>("Saving highlight..." );
-  const [saveErrorMessage, setSaveErrorMessage] = useState<string>("Error saving highlight.");
+  const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(null);
+  const [saveError, setSaveError] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("Saving highlight...");
+  const [saveErrorMessage, setSaveErrorMessage] = useState("Error saving highlight.");
 
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -50,9 +50,7 @@ const BookReader: React.FC = () => {
   }>({ visible: false, x: 0, y: 0 });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [rendition, setRendition] = useState<Rendition | undefined>(undefined);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
-    null
-  );
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!bookId) {
@@ -61,11 +59,9 @@ const BookReader: React.FC = () => {
       return;
     }
 
-    // Fetch the book
     const fetchBook = async () => {
       try {
-
-        // Get book url
+        // Get book URL
         let response = await fetch(`http://localhost:8000/book/${bookId}`, {
           method: "GET",
           headers: {
@@ -75,27 +71,25 @@ const BookReader: React.FC = () => {
 
         if (response.ok) {
           const data = await response.json();
-          setBookUrl(data.url); // Set the pre-signed URL returned from the backend
+          setBookUrl(data.url);
         } else {
           console.error("Error fetching book:", response.statusText);
           setError("Failed to fetch book.");
         }
 
-        // Get book highlights
-        const url = `http://localhost:8000/book/${bookId}/highlights`;
-        response = await fetch(url, {
+        // Get highlights
+        const highlightsUrl = `http://localhost:8000/book/${bookId}/highlights`;
+        response = await fetch(highlightsUrl, {
           method: "GET",
           headers: user.authorizationHeaders(),
         });
 
-        if (response.status == 200) {
+        if (response.status === 200) {
           const data = await response.json();
           setHighlights(data);
+        } else {
+          console.error("Failed to fetch book highlights.");
         }
-        else {
-          console.error("Either failed to fetch book highlights or there are no highlights for the book");
-        }
-
       } catch (error) {
         console.error("Error fetching book:", error);
         setError("Error fetching book.");
@@ -109,14 +103,13 @@ const BookReader: React.FC = () => {
 
   useEffect(() => {
     if (highlights && rendition) {
-
-      // Populate book highlights in rendition
-      highlights.forEach(highlight => {
+      // Add highlights to rendition
+      highlights.forEach((highlight) => {
         rendition.annotations.add(
           "highlight",
           highlight.location,
-          undefined,
-          undefined,
+          {},
+          () => handleHighlightClick(highlight.id), // Add click handler with highlight ID
           "hl",
           {
             fill: "red",
@@ -124,62 +117,37 @@ const BookReader: React.FC = () => {
             "mix-blend-mode": "multiply",
           }
         );
-      })
-
-      function setContextMenuHandler(_: Section, view: any) {
-        const iframe = view.iframe as HTMLIFrameElement | null;
-        const iframeDoc = iframe?.contentDocument;
-        const iframeWindow = iframe?.contentWindow;
-
-        if (iframeDoc && iframeWindow) {
-          function contextMenuHandler(event: MouseEvent) {
-            event.preventDefault();
-            const textSelection = iframeWindow?.getSelection();
-            if (textSelection && textSelection.toString().length > 0) {
-              const x = event.screenX - window.screenX + 5;
-              const y = event.screenY - window.screenY - 275;
-              setContextMenu({ visible: true, x, y });
-            }
-          }
-
-          function dismissMenuHandler(e: MouseEvent) {
-            const menu = ctxMenuRef.current as HTMLElement;
-            if (menu && !menu.contains(e.target as Node) && e.button == 0) {
-              setContextMenu({ visible: false, x: 0, y: 0 });
-            }
-          }
-
-          iframeDoc.addEventListener("contextmenu", contextMenuHandler);
-          iframeDoc.addEventListener("mousedown", dismissMenuHandler);
-        } else {
-          console.error("Unable to find epubjs iframe");
-        }
-      }
-
-      function setRenderSelection(cfiRange: string, _: Contents) {
-        if (rendition) {
-          const selection: Selection = {
-            text: rendition.getRange(cfiRange).toString(),
-            location: cfiRange,
-          };
-          setSelection(selection);
-        }
-      }
-
-      rendition.on("rendered", setContextMenuHandler);
-      rendition.on("selected", setRenderSelection);
-
-      return () => {
-        rendition?.off("rendered", setContextMenuHandler);
-        rendition?.off("selected", setRenderSelection);
-      };
+      });
     }
-  }, [setSelection, rendition]);
+  }, [highlights, rendition]);
+
+  const fetchHighlightMetadata = async (highlightId: string) => {
+    try {
+      const url = `http://localhost:8000/book/${bookId}/highlight/${highlightId}`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: user.authorizationHeaders(),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedHighlight(data); // Set the retrieved highlight data
+        setModalVisible(true); // Open the modal
+      } else {
+        console.error("Failed to fetch highlight metadata:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching highlight metadata:", error);
+    }
+  };
+
+  const handleHighlightClick = (highlightId: string) => {
+    fetchHighlightMetadata(highlightId);
+  };
 
   const handleHighlight = async () => {
     if (rendition && selection) {
-      setSaveMessage("Saving highlight...")
-      setSaveErrorMessage("Error saving highlight.")
+      setSaveMessage("Saving highlight...");
       setModalVisible(true);
 
       try {
@@ -192,7 +160,6 @@ const BookReader: React.FC = () => {
 
         if (response.status === 200) {
           setModalVisible(false);
-
           rendition.annotations.add(
             "highlight",
             selection.location,
@@ -206,8 +173,6 @@ const BookReader: React.FC = () => {
             }
           );
 
-          // getContents() actually returns Contents[] and not Contents
-          // @ts-ignore: because return type of getContents() is outdated
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
           setSaveError(false);
         } else {
@@ -224,8 +189,7 @@ const BookReader: React.FC = () => {
 
   const handleRenderImage = async () => {
     if (rendition && selection) {
-      setSaveMessage("Visualizing highlight...")
-      setSaveErrorMessage("Error saving highlight.")
+      setSaveMessage("Visualizing highlight...");
       setModalVisible(true);
 
       try {
@@ -238,13 +202,11 @@ const BookReader: React.FC = () => {
 
         if (response.status === 200) {
           setModalVisible(false);
-
           rendition.annotations.add(
             "highlight",
             selection.location,
             {},
-            (e: MouseEvent) =>
-              console.log("click on selection", selection.location, e),
+            (e: MouseEvent) => console.log("click on selection", selection.location, e),
             "hl",
             {
               fill: "red",
@@ -253,11 +215,8 @@ const BookReader: React.FC = () => {
             }
           );
 
-          // getContents() actually returns Contents[] and not Contents
-          // @ts-ignore: because return type of getContents() is outdated
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
           setSaveError(false);
-
         } else {
           console.error("Failed to visualize highlight", response);
           setSaveError(true);
@@ -313,58 +272,44 @@ const BookReader: React.FC = () => {
           ]}
           ref={ctxMenuRef}
         >
-          <TouchableOpacity
-            style={styles.contextMenuItem}
-            onPress={handleHighlight}
-          >
+          <TouchableOpacity style={styles.contextMenuItem} onPress={handleHighlight}>
             <Text>Highlight</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.contextMenuItem}
-            onPress={handleRenderImage}
-          >
+          <TouchableOpacity style={styles.contextMenuItem} onPress={handleRenderImage}>
             <Text>Visualize</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {generatedImageUrl && (
-        <View style={{ margin: 20 }}>
-          <Text>Generated Image:</Text>
-          <Image
-            source={{ uri: generatedImageUrl }}
-            style={{ width: 200, height: 200 }}
-            resizeMode="contain"
-          />
-        </View>
+      {modalVisible && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContainer}
+            onPressOut={() => setModalVisible(false)}
+          >
+            <View style={styles.modalView}>
+              {selectedHighlight?.imgUrl ? (
+                <>
+                  <Text>Highlight image:</Text>
+                  <br ></br>
+                  <Image
+                    source={{ uri: selectedHighlight.imgUrl }}
+                    style={{ width: 330, height: 330 }}
+                    resizeMode="contain"
+                  />
+                </>
+              ) : (
+                <Text>No image generated for this highlight.</Text>
+              )}
+            </View>
+          </TouchableOpacity>
+        </Modal>
       )}
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(!modalVisible);
-        }}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalView}>
-            {!saveError ? (
-              <Loading message={saveMessage}/>
-            ) : (
-              <>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => {setModalVisible(false); setSaveError(false);}}
-                >
-                  <Text style={styles.closeButtonText}>X</Text>
-                </TouchableOpacity>
-                <Text>{saveErrorMessage}</Text>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -403,17 +348,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 10,
-  },
-  closeButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#000",
   },
 });
 
