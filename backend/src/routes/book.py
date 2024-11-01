@@ -245,7 +245,7 @@ async def add_book_highlight(request: Request, book_id: str, body: CreateHighlig
     if not book_metadata:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
 
-    imgUrl = None if not image else await generate_image(body.text)
+    imgUrl = None if not image else generate_image(body.text)
 
     # Create a new highlight with UUID
     highlight_id = str(uuid.uuid4())
@@ -272,6 +272,7 @@ async def add_book_highlight(request: Request, book_id: str, body: CreateHighlig
             "message": "Successfully saved highlight!",
             "highlightId": highlight_id,
             "highlightText": highlight["text"],
+            "imgUrl": imgUrl,
             "bookId": book_id
         }
     )
