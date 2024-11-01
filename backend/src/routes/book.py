@@ -9,6 +9,7 @@ from utils.text2image import generate_image
 from database.book_metadata import extract_metadata
 from database.mongodb import get_mongodb_collection
 from models.book import Book, extract_metadata, hash_email
+from models.highlight import Highlight
 from database.s3_db import delete_file_data 
 from io import BytesIO
 from botocore.exceptions import NoCredentialsError
@@ -207,17 +208,8 @@ async def delete_highlight(request: Request, bookid: str, highlightid: str):
     # Hash the user's email to match the collection name (ownerId)
     owner_id = hash_email(user_email)
 
-    # Retrieve books from MongoDB based on the owner's hashed email
-    collection = get_mongodb_collection(owner_id)
-
-    # Attempt to delete the highlight from the book's metadata
-    result = collection.update_one(
-        {"_id": bookid},
-        {"$pull": {"highlights": {"id": highlightid}}}
-    )
-
-    if result.modified_count == 0:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Highlight not found")
+    # Call delete_highlight from Highlight model
+    Highlight.delete_highlight(bookid, highlightid, owner_id)
 
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Successfully deleted highlight!"})
 
@@ -242,40 +234,8 @@ async def add_book_highlight(request: Request, book_id: str, body: CreateHighlig
     collection = get_mongodb_collection(owner_id)
     book_metadata = collection.find_one({"_id": book_id})
 
-    if not book_metadata:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
-
-    imgUrl = None if not image else generate_image(body.text)
-
-    # Create a new highlight with UUID
-    highlight_id = str(uuid.uuid4())
-    highlight = {
-        "id": highlight_id,
-        "text": body.text,
-        "imgUrl": imgUrl,
-        "location": body.location
-    }
-
-    # Add the new highlight to the existing book's metadata
-    if "highlights" not in book_metadata:
-        book_metadata["highlights"] = []
-
-    book_metadata["highlights"].append(highlight)
-
-    # Update the book metadata in MongoDB
-    collection.update_one({"_id": book_id}, {"$set": {"highlights": book_metadata["highlights"]}})
-
-    # Response on success
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={
-            "message": "Successfully saved highlight!",
-            "highlightId": highlight_id,
-            "highlightText": highlight["text"],
-            "imgUrl": imgUrl,
-            "bookId": book_id
-        }
-    )
+    # Call create_highlight from Highlight model
+    return Highlight.create_highlight(book_id, owner_id, body.text, body.location, image)
 
 # GET route for Retrieving all the highlights created for a book
 @router.get("/book/{book_id}/highlights", tags=["book"])
@@ -288,23 +248,13 @@ async def get_all_highlights(request: Request, book_id: str):
     access_token = auth_header.split(" ")[1]
     user_email = get_user_info(access_token)['email']
 
-    try:
-        # Hash the user's email to match the collection name (ownerId)
-        ownerId = hash_email(user_email)
-    
-        # Getting the metaData which also have highlights
-        collection = get_mongodb_collection(ownerId)
-        result = collection.find_one({"_id": book_id}, {"highlights": 1, "_id": 0})
-        
-        if not result:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
+    # Hash the user's email to match the collection name (ownerId)
+    ownerId = hash_email(user_email)
 
-        highlights = result.get("highlights", [])
+    # Call get_highlights from Highlight model
+    highlights = Highlight.get_highlights(book_id, owner_id)
 
-        return JSONResponse(content=highlights)
-    
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    return JSONResponse(content=highlights)
 
 # GET /book/:id/highlight - Get highlight by id
 @router.get("/book/{book_id}/highlight/{highlight_id}", tags=["book"])
@@ -320,26 +270,7 @@ async def get_book_highlight(request: Request, book_id: str, highlight_id: str):
 
     owner_id = hash_email(user_email)
 
-    # Retrieve the book metadata from MongoDB
-    collection = get_mongodb_collection(owner_id)
-    book_metadata = collection.find_one({"_id": book_id})
+    # Call get_highlight_by_id from Highlight model
+    highlight = Highlight.get_highlight_by_id(book_id, highlight_id, owner_id)
 
-    if not book_metadata:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
-
-    # Find highlight by id
-    highlights = book_metadata.get("highlights", [])
-    highlight = next((h for h in highlights if h["id"] == highlight_id), None)
-
-    if not highlight:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Highlight not found")
-
-    # highlight metadata
-    response_content = {
-        "id": highlight["id"],
-        "text": highlight["text"],
-        "imgUrl": highlight.get("imgUrl"),
-        "location": highlight.get("location", "Unknown location")
-    }
-
-    return JSONResponse(content=response_content, status_code=status.HTTP_200_OK)
+    return JSONResponse(content=highlight, status_code=status.HTTP_200_OK)
