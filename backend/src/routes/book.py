@@ -1,23 +1,20 @@
-# src/routes/book.py
+import os
+import boto3
+import uuid
+
 from fastapi import APIRouter, HTTPException, UploadFile, Form, Request, status, Depends
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from auth import auth_middleware, get_user_info
+from utils.text2image import generate_image
 from database.book_metadata import extract_metadata
 from database.mongodb import get_mongodb_collection
 from models.book import Book, extract_metadata, hash_email
-from database.s3_db import read_file_data, delete_file_data 
+from database.s3_db import delete_file_data 
 from io import BytesIO
-import boto3
 from botocore.exceptions import NoCredentialsError
 from dotenv import load_dotenv
-import os
-
 from pydantic import BaseModel
 from typing import Annotated, Optional
-
-import uuid
-
-print(f"hello from book route")
 
 load_dotenv()
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
@@ -206,7 +203,7 @@ class CreateHighlight(BaseModel):
 
 # POST /book/:id/highlight - Add a highlight to the book's metadata
 @router.post("/book/{book_id}/highlight", tags=["book"])
-async def add_book_highlight(request: Request, book_id: str, body: CreateHighlight):
+async def add_book_highlight(request: Request, book_id: str, body: CreateHighlight, image: bool):
     # Get user email from Authorization header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -223,11 +220,14 @@ async def add_book_highlight(request: Request, book_id: str, body: CreateHighlig
     if not book_metadata:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
 
+    imgUrl = None if not image else await generate_image(body.text)
+
     # Create a new highlight with UUID
     highlight_id = str(uuid.uuid4())
     highlight = {
         "id": highlight_id,
         "text": body.text,
+        "imgUrl": imgUrl,
         "location": body.location
     }
 
