@@ -250,3 +250,50 @@ async def add_book_highlight(request: Request, book_id: str, body: CreateHighlig
             "bookId": book_id
         }
     )
+
+# GET /book/:id/highlight - Get highlight by id
+@router.get("/books/{book_id}/highlight/{highlight_id}", tags=["book"])
+async def get_book_highlight(request: Request, book_id: str, highlight_id: str):
+    # Get user email from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
+
+    access_token = auth_header.split(" ")[1]
+    user_email = get_user_info(access_token)['email']
+    owner_id = hash_email(user_email)
+
+    # Retrieve the book metadata from MongoDB
+    collection = get_mongodb_collection(owner_id)
+    book_metadata = collection.find_one({"_id": book_id})
+
+    if not book_metadata:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
+
+    # Find highlight by id
+    highlights = book_metadata.get("highlights", [])
+    highlight = next((h for h in highlights if h["id"] == highlight_id), None)
+
+    if not highlight:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Highlight not found")
+
+    # Generate a presigned URL for the highlight image if available
+    img_s3_key = f"{owner_id}/highlights/{highlight_id}.png"
+    try:
+        img_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': S3_BUCKET_NAME, 'Key': img_s3_key},
+            ExpiresIn=3600  # URL expires in 1 hour
+        )
+    except NoCredentialsError:
+        img_url = None
+
+    # highlight metadata
+    response_content = {
+        "id": highlight["id"],
+        "text": highlight["text"],
+        "imgUrl": img_url or "Image not available",
+        "location": highlight.get("location", "Unknown location")
+    }
+
+    return JSONResponse(content=response_content, status_code=status.HTTP_200_OK)
