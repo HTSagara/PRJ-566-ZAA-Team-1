@@ -301,8 +301,11 @@ async def get_all_highlights(request: Request, book_id: str):
 
         highlights = result.get("highlights", [])
 
+        if not highlights:
+            return JSONResponse(content={"message": "No highlights found for this book"}, status_code=status.HTTP_200_OK)
+
         return JSONResponse(content=highlights)
-    
+
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
