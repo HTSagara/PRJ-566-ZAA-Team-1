@@ -5,18 +5,15 @@ import {
     TouchableOpacity,
     Alert,
     StyleSheet,
-    TextInput,
-    Button,
     Modal,
 } from "react-native";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { getUser } from "@/utilities/auth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Entypo from "react-native-vector-icons/Entypo";
+import Ionicons from "react-native-vector-icons/Ionicons"
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import { router } from "expo-router";
 import { FlatList } from "react-native-gesture-handler";
 
 //defining highlight interface
@@ -68,10 +65,23 @@ export default function ShowBookHighlights() {
         }
 
         fetchHighlights()
-    }, [bookId, backendURL]);
+    }, [bookId, backendURL]); Ionicons
 
     return (
         <div>
+            <div>
+                <View style={styles.container}>
+                    <View style={styles.header}>
+                        <TouchableOpacity onPress={() =>
+                            navigation.navigate("bookdetails", { bookId })}
+                        >
+                            <Icon name="chevron-left" size={24} color="#000" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Highlights</Text>
+                    </View>
+                </View>
+                <hr style={{ borderTop: "9px solid lightgray" }} />
+            </div>
             <FlatList
                 data={highlight}
                 renderItem={({ item }) => (
@@ -114,6 +124,12 @@ export default function ShowBookHighlights() {
             >
                 <View style={styles.modalContainer}>
                     <View style={styles.modalView}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setModalVisible(!modalVisible)}
+                        >
+                            <Ionicons name="close" size={28} color="#000" />
+                        </TouchableOpacity>
                         <View style={styles.buttonRow}>
                             <TouchableOpacity style={[styles.button]}>
                                 <Text style={styles.textStyle}>Delete Image highlight</Text>
@@ -199,5 +215,28 @@ const styles = StyleSheet.create({
         color: "white",
         fontWeight: "bold",
         textAlign: "center",
+    },
+    container: {
+        flex: 1,
+        padding: 20,
+    },
+    header: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        paddingVertical: 10,
+        marginBottom: 10,
+    },
+    headerTitle: {
+        fontSize: 28,
+        fontWeight: "bold",
+        textAlign: "center",
+        flex: 1
+    },
+    closeButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        padding: 5,
     },
 });
