@@ -21,7 +21,7 @@ export interface Highlight {
     id: string;
     text: string;
     location: string;
-    imageUrl?: string;
+    imgUrl?: string;
 }
 
 export default function ShowBookHighlights() {
@@ -91,7 +91,7 @@ export default function ShowBookHighlights() {
                         style={styles.cardContainer}
                     >
                         <View style={styles.card}>
-                            {item.imageUrl && (
+                            {item.imgUrl && (
                                 <Icon
                                     name="image"
                                     size={24}
