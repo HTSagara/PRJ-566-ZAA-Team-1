@@ -17,6 +17,7 @@ import Section from "epubjs/types/section";
 
 import Loading from "@/components/Loading";
 import { AuthContext, type User } from "@/utilities/auth";
+import { Highlight } from "./highlights";
 
 interface Selection {
   text: string;
@@ -30,7 +31,7 @@ const BookReader: React.FC = () => {
   const ctxMenuRef = useRef<any>(null);
 
   const route = useRoute();
-  const { bookId } = route.params as { bookId: string };
+  const { bookId, userHighlight } = route.params as { bookId: string, userHighlight: Highlight };
 
   const [location, setLocation] = useState<string | number>(0);
   const [bookUrl, setBookUrl] = useState<string | null>(null);
@@ -40,7 +41,7 @@ const BookReader: React.FC = () => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
   const [saveError, setSaveError] = useState<boolean>(false);
-  const [saveMessage, setSaveMessage] = useState<string>("Saving highlight..." );
+  const [saveMessage, setSaveMessage] = useState<string>("Saving highlight...");
   const [saveErrorMessage, setSaveErrorMessage] = useState<string>("Error saving highlight.");
 
   const [contextMenu, setContextMenu] = useState<{
@@ -54,6 +55,7 @@ const BookReader: React.FC = () => {
     null
   );
 
+  // This useEffect is triggered when the bookReader page is called and it's job is to fetch book content from S3
   useEffect(() => {
     if (!bookId) {
       setError("No bookId provided");
@@ -88,13 +90,16 @@ const BookReader: React.FC = () => {
           headers: user.authorizationHeaders(),
         });
 
-        if (response.status == 200) {
+        if (response.status === 200) {
           const data = await response.json();
           setHighlights(data);
         }
         else {
           console.error("Either failed to fetch book highlights or there are no highlights for the book");
         }
+
+        if (userHighlight && userHighlight.location)
+          setLocation(userHighlight.location)
 
       } catch (error) {
         console.error("Error fetching book:", error);
@@ -105,8 +110,9 @@ const BookReader: React.FC = () => {
     };
 
     fetchBook();
-  }, [bookId]);
+  }, [bookId, user]);
 
+  // This useEffect is triggered when user creates a Highlight while in the readMode
   useEffect(() => {
     if (highlights && rendition) {
 
@@ -144,7 +150,7 @@ const BookReader: React.FC = () => {
 
           function dismissMenuHandler(e: MouseEvent) {
             const menu = ctxMenuRef.current as HTMLElement;
-            if (menu && !menu.contains(e.target as Node) && e.button == 0) {
+            if (menu && !menu.contains(e.target as Node) && e.button === 0) {
               setContextMenu({ visible: false, x: 0, y: 0 });
             }
           }
@@ -174,7 +180,7 @@ const BookReader: React.FC = () => {
         rendition?.off("selected", setRenderSelection);
       };
     }
-  }, [setSelection, rendition]);
+  }, [setSelection, rendition, highlights]);
 
   const handleHighlight = async () => {
     if (rendition && selection) {
@@ -350,12 +356,12 @@ const BookReader: React.FC = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalView}>
             {!saveError ? (
-              <Loading message={saveMessage}/>
+              <Loading message={saveMessage} />
             ) : (
               <>
                 <TouchableOpacity
                   style={styles.closeButton}
-                  onPress={() => {setModalVisible(false); setSaveError(false);}}
+                  onPress={() => { setModalVisible(false); setSaveError(false); }}
                 >
                   <Text style={styles.closeButtonText}>X</Text>
                 </TouchableOpacity>
