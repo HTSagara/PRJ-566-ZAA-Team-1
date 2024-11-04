@@ -259,7 +259,6 @@ async def get_all_highlights(request: Request, book_id: str):
 
     return JSONResponse(content=highlights_dict)
 
-
 # GET /book/:id/highlight - Get highlight by id
 @router.get("/book/{book_id}/highlight/{highlight_id}", tags=["book"])
 async def get_book_highlight(request: Request, book_id: str, highlight_id: str):
