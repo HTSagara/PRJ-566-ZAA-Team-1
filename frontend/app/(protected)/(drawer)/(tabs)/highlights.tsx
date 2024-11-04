@@ -80,7 +80,6 @@ export default function ShowBookHighlights() {
                         <Text style={styles.headerTitle}>Highlights</Text>
                     </View>
                 </View>
-                <hr style={{ borderTop: "9px solid lightgray" }} />
             </div>
             <FlatList
                 data={highlight}
