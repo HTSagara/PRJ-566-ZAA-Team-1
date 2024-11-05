@@ -280,7 +280,7 @@ async def get_book_highlight(request: Request, book_id: str, highlight_id: str):
     return JSONResponse(content=highlight, status_code=status.HTTP_200_OK)
 
 
-@router.put("/owner/{owner_id}/book/{book_id}/highlight/{highlight_id}", tags=["book"])
+@router.put("/book/{book_id}/highlight/{highlight_id}", tags=["highlight"])
 async def regenerate_highlight_image(request: Request, book_id: str, highlight_id: str):
     # Get user email from Authorization header
     auth_header = request.headers.get("Authorization")
