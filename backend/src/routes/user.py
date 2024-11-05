@@ -15,9 +15,14 @@ cognito_client = boto3.client('cognito-idp', region_name=COGNITO_REGION)
 
 router = APIRouter()
 
+
+
+
 @router.get("/user", tags=["user"])
 async def read_user_me(request: Request):
     return request.state.user
+
+
 
 
 @router.delete("/user", tags=["user"])
@@ -35,6 +40,8 @@ async def delete_user(request: Request):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
 
 
 class UpdateUserModel(BaseModel):

@@ -26,6 +26,9 @@ router = APIRouter()
 # include highlight routes
 router.include_router(highlight.router)
 
+
+
+
 class BookFormData(BaseModel):
     title: Optional[str] = None
     author: Optional[str] = None
@@ -60,6 +63,9 @@ async def upload_book(request: Request, data: Annotated[BookFormData, Form()]):
 
     return book.get_metadata()
 
+
+
+
 # GET /books - Retrieve Books Metadata API
 @router.get("/books", tags=["book"])
 async def retrieve_books(request: Request):
@@ -78,6 +84,9 @@ async def retrieve_books(request: Request):
 
     return books
 
+
+
+
 # GET /book/info/{id} this route gets book metadata from mongodb
 @router.get("/book/info/{book_id}", tags=["book"])
 async def get_book_info(request: Request, book_id: str):
@@ -94,6 +103,8 @@ async def get_book_info(request: Request, book_id: str):
     book_metadata["id"] = str(book_metadata.pop("_id"))
 
     return JSONResponse(content=book_metadata)
+
+
 
 
 # GET book content from amazon S3 bucket  
@@ -117,6 +128,8 @@ async def get_book_presigned_url(request: Request, book_id: str):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="S3 credentials are missing or invalid")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
 
 
 # Delete route for book
