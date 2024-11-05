@@ -4,9 +4,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from ...auth import get_user_info
 from ...database.mongodb import get_mongodb_collection
-from ...models.book import hash_email
 from ...models.highlight import Highlight
 from ...utils.text2image import overwrite_image
 
@@ -20,6 +18,9 @@ s3 = boto3.client('s3')
 
 router = APIRouter(prefix="/book/{book_id}")
 
+
+
+
 # Pydantic model for the input
 class CreateHighlight(BaseModel):
     text: str
@@ -28,100 +29,71 @@ class CreateHighlight(BaseModel):
 # POST /book/:id/highlight - Add a highlight to the book's metadata
 @router.post("/highlight", tags=["highlight"])
 async def add_book_highlight(request: Request, book_id: str, body: CreateHighlight, image: bool = False):
-    # Get user email from Authorization header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
-
-    access_token = auth_header.split(" ")[1]
-    user_email = get_user_info(access_token)['email']
-    owner_id = hash_email(user_email)
-
-    # Retrieve the book metadata from MongoDB
-    collection = get_mongodb_collection(owner_id)
-    book_metadata = collection.find_one({"_id": book_id})
+    owner_id = request.state.user["id"]
 
     # Call create_highlight from Highlight model
-    highlight = Highlight(text=body.text, location=body.location, bookId=book_id, ownerId=owner_id)
+    highlight = Highlight(text=body.text, location=body.location, book_id=book_id, owner_id=owner_id)
     return highlight.create_highlight(image)
+
+
 
 
 @router.get("/highlights", tags=["highlight"])
 async def get_all_highlights(request: Request, book_id: str):
-    # Get user email from Authorization header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
-
-    access_token = auth_header.split(" ")[1]
-    user_email = get_user_info(access_token)['email']
-    owner_id = hash_email(user_email)
+    owner_id = request.state.user["id"]
 
     # Call the static method with required arguments
-    highlight_instance = Highlight(bookId=book_id, ownerId=owner_id)
+    highlight_instance = Highlight(book_id=book_id, owner_id=owner_id)
     highlights = highlight_instance.get_highlights()
-    highlights_dict = [highlight.dict() for highlight in highlights]
+    # highlights_dict = [highlight.model_dump() for highlight in highlights]
 
-    return JSONResponse(content=highlights_dict)
+    # return JSONResponse(content=highlights_dict)
+    return JSONResponse(content=highlights)
+
+
 
 
 # GET /book/:id/highlight - Get highlight by id
 @router.get("/highlight/{highlight_id}", tags=["highlight"])
 async def get_book_highlight(request: Request, book_id: str, highlight_id: str):
-
-    # Get user email from Authorization header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
-
-    access_token = auth_header.split(" ")[1]
-    user_email = get_user_info(access_token)['email']
-
-    owner_id = hash_email(user_email)
+    owner_id = request.state.user["id"]
 
     # Instantiate a Highlight object with bookId, ownerId, and highlight_id 
-    highlight_instance = Highlight(id=highlight_id, bookId=book_id, ownerId=owner_id)
+    highlight_instance = Highlight(id=highlight_id, book_id=book_id, owner_id=owner_id)
     highlight = highlight_instance.get_highlight_by_id()
 
     return JSONResponse(content=highlight, status_code=status.HTTP_200_OK)
 
 
+
+
 # Delete Highlight API
 @router.delete("/highlight/{highlightid}", tags=["highlight"])
-async def delete_highlight(request: Request, bookid: str, highlightid: str):
-    # Get user email from Authorization header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
-    access_token = auth_header.split(" ")[1]
-    user_email = get_user_info(access_token)['email']
-
-    # Hash the user's email to match the collection name (ownerId)
-    owner_id = hash_email(user_email)
+async def delete_highlight(request: Request, book_id: str, highlightid: str):
+    owner_id = request.state.user["id"]
 
     # Call delete_highlight from Highlight model
-    Highlight.delete_highlight(bookid, highlightid, owner_id)
+    highlight_instance = Highlight(id=highlightid, book_id=book_id, owner_id=owner_id)
+    highlight_instance.delete_highlight()
 
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Successfully deleted highlight!"})
 
 
+
+
 @router.put("/highlight/{highlight_id}", tags=["highlight"])
 async def regenerate_highlight_image(request: Request, book_id: str, highlight_id: str):
-    # Get user email from Authorization header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
-    
-    access_token = auth_header.split(" ")[1]
-    user_email = get_user_info(access_token)['email']
-    owner_id = hash_email(user_email)
+    owner_id = request.state.user["id"]
     
     # Query the MongoDB for the book document and find the highlight by ID
     collection = get_mongodb_collection(owner_id)
     book_metadata = collection.find_one({"_id": book_id})
     
     # Extract the highlight text based on highlight_id
-    highlight_data = next((highlight for highlight in book_metadata.get("highlights", []) if highlight["id"] == highlight_id), None)
+    if book_metadata:
+        highlight_data = next((highlight for highlight in book_metadata.get("highlights", []) if highlight["id"] == highlight_id), None)
+    else:
+        raise HTTPException(status_code=404, detail="Book not found")
     
     if not highlight_data:
         raise HTTPException(status_code=404, detail="Highlight not found")

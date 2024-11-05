@@ -1,7 +1,6 @@
-# src/models/highlight.py
 from pydantic import BaseModel, Field
 import uuid
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 from fastapi import HTTPException
 
 from ..utils.text2image import generate_image
@@ -12,15 +11,22 @@ class Highlight(BaseModel):
     text: Optional[str] = None
     location: Optional[str] = None
     imgUrl: Optional[str] = None
-    bookId: Optional[str] = None  # Made optional
-    ownerId: Optional[str] = None  # Made optional
+    book_id: Optional[str] = None  # Made optional
+    owner_id: Optional[str] = None  # Made optional
 
     def create_highlight(self, image: bool = False) -> Dict:
-        self.imgUrl = generate_image(self.text, self.ownerId, self.id, self.bookId) if image else None
-        highlight_data = self.dict()
-        collection = get_mongodb_collection(self.ownerId)
+
+        if not self.text or not self.id or not self.owner_id or not self.book_id: 
+            return {}
+
+        self.imgUrl = generate_image(self.text, self.owner_id, self.id, self.book_id) if image else None
+        highlight_data = self.model_dump()
+        del highlight_data["book_id"]
+        del highlight_data["owner_id"]
+        collection = get_mongodb_collection(self.owner_id)
+        print(highlight_data)
         result = collection.update_one(
-            {"_id": self.bookId},
+            {"_id": self.book_id},
             {"$push": {"highlights": highlight_data}}
         )
         if result.modified_count == 0:
@@ -31,37 +37,47 @@ class Highlight(BaseModel):
             "highlightId": self.id,
             "highlightText": self.text,
             "imgUrl": self.imgUrl,
-            "bookId": self.bookId
+            "bookId": self.book_id
         }
 
     def delete_highlight(self) -> None:
-        collection = get_mongodb_collection(self.ownerId)
+
+        if not self.owner_id:
+            raise HTTPException(status_code=404, detail="Missing owner_id for highlight")
+
+        collection = get_mongodb_collection(self.owner_id)
         result = collection.update_one(
-            {"_id": self.bookId},
+            {"_id": self.book_id},
             {"$pull": {"highlights": {"id": self.id}}}
         )
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="Highlight not found")
 
     
-    def get_highlights(self) -> List[Dict]:
-        collection = get_mongodb_collection(self.ownerId)
-        result = collection.find_one({"_id": self.bookId}, {"highlights": 1, "_id": 0})
+    def get_highlights(self):
+        if not self.owner_id:
+            raise HTTPException(status_code=404, detail="Missing owner_id for highlight")
+
+        collection = get_mongodb_collection(self.owner_id)
+        result = collection.find_one({"_id": self.book_id}, {"highlights": 1, "_id": 0})
 
         if not result:
             raise HTTPException(status_code=404, detail="Book not found")
 
         # Ensure bookId and ownerId are only added if they aren't already in the highlight data
-        highlights = [
-            Highlight(**{**highlight, "bookId": self.bookId, "ownerId": self.ownerId})
-            for highlight in result.get("highlights", [])
-        ]
-        return highlights
+        # highlights = [
+        #     Highlight(**{**highlight})
+        #     for highlight in result.get("highlights", [])
+        # ]
+        return result.get("highlights", [])
 
 
     def get_highlight_by_id(self) -> Dict:
-        collection = get_mongodb_collection(self.ownerId)
-        book_metadata = collection.find_one({"_id": self.bookId})
+        if not self.owner_id:
+            raise HTTPException(status_code=404, detail="Missing owner_id for highlight")
+
+        collection = get_mongodb_collection(self.owner_id)
+        book_metadata = collection.find_one({"_id": self.book_id})
 
         if not book_metadata:
             raise HTTPException(status_code=404, detail="Book not found")

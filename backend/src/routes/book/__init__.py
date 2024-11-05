@@ -7,11 +7,10 @@ from botocore.exceptions import NoCredentialsError
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Annotated, Optional
-from ...auth import get_user_info
 from ...database.book_metadata import extract_metadata
 from ...database.mongodb import get_mongodb_collection
 from ...database.s3_db import delete_file_data 
-from ...models.book import Book, extract_metadata, hash_email
+from ...models.book import Book, extract_metadata
 from . import highlight
 
 load_dotenv()
@@ -34,19 +33,13 @@ class BookFormData(BaseModel):
 
 @router.post("/book", tags=["book"])
 async def upload_book(request: Request, data: Annotated[BookFormData, Form()]):
+    user_email = request.state.user['email']
 
     # Validate uploaded book file
     file = data.file
     print("File Content", file)
     if file.content_type not in ("application/epub", "application/epub+zip", "application/pdf"):
         return JSONResponse(status_code=400, content={"message": "Invalid file type. Only EPUB or PDF files are allowed."})
-
-    # Get user email
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
-    access_token = auth_header.split(" ")[1]
-    user_email = get_user_info(access_token)['email']
 
     # Get metadata from file
     file_stream = BytesIO(await file.read())
@@ -70,15 +63,7 @@ async def upload_book(request: Request, data: Annotated[BookFormData, Form()]):
 # GET /books - Retrieve Books Metadata API
 @router.get("/books", tags=["book"])
 async def retrieve_books(request: Request):
-    # Get user email from Authorization header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
-    access_token = auth_header.split(" ")[1]
-    user_email = get_user_info(access_token)['email']
-
-    # Hash the user's email to match the collection name (ownerId)
-    owner_id = hash_email(user_email)  # using already defined function to hash the email
+    owner_id = request.state.user["id"]
 
     # Retrieve books from MongoDB based on the owner's hashed email
     collection = get_mongodb_collection(owner_id)
@@ -96,15 +81,7 @@ async def retrieve_books(request: Request):
 # GET /book/info/{id} this route gets book metadata from mongodb
 @router.get("/book/info/{book_id}", tags=["book"])
 async def get_book_info(request: Request, book_id: str):
-    # Get user email from Authorization header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
-    access_token = auth_header.split(" ")[1]
-    user_email = get_user_info(access_token)['email']
-
-    # Hash user's email to match collection name
-    owner_id = hash_email(user_email)
+    owner_id = request.state.user["id"]
 
     # Retrieve the book metadata from MongoDB based on user's hashed email and the UUID field
     collection = get_mongodb_collection(owner_id)
@@ -118,16 +95,11 @@ async def get_book_info(request: Request, book_id: str):
 
     return JSONResponse(content=book_metadata)
 
+
 # GET book content from amazon S3 bucket  
 @router.get("/book/{book_id}", tags=["book"])
 async def get_book_presigned_url(request: Request, book_id: str):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
-
-    access_token = auth_header.split(" ")[1]
-    user_email = get_user_info(access_token)['email']
-    owner_id = hash_email(user_email)  # Hash the user's email to get the S3 folder name
+    owner_id = request.state.user["id"]
 
     # Define the S3 key for the book file
     s3_key = f"{owner_id}/{book_id}"
@@ -146,29 +118,22 @@ async def get_book_presigned_url(request: Request, book_id: str):
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+
 # Delete route for book
 @router.delete("/book/{book_id}", tags=["book"])
 async def delete_book(request: Request, book_id: str):
-    # Get user email from Authorization header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing or invalid")
-    access_token = auth_header.split(" ")[1]
-    user_email = get_user_info(access_token)['email']
+    owner_id = request.state.user["id"]
 
     try:
-        # Hash the user's email to match the collection name (ownerId)
-        ownerId = hash_email(user_email)
-    
         # Deleting the book metadata from mongodb
-        collection = get_mongodb_collection(ownerId)
+        collection = get_mongodb_collection(owner_id)
         result = collection.delete_one({"_id": book_id})
 
         if result.deleted_count > 0:
             print(f"Book with ID {book_id} successfully deleted.")
 
             # S3 key where the book file is stored
-            s3_key = f"{ownerId}/{book_id}"
+            s3_key = f"{owner_id}/{book_id}"
     
             # Now deleing book from AWS s3
             response = delete_file_data(s3_key)

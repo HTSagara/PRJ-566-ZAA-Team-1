@@ -1,4 +1,3 @@
-# src/models/book.py
 from fastapi import HTTPException
 from io import BytesIO
 import hashlib
