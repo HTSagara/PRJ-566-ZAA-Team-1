@@ -2,9 +2,10 @@
 from pydantic import BaseModel, Field
 import uuid
 from typing import Optional, List, Dict
-from database.mongodb import get_mongodb_collection
 from fastapi import HTTPException
-from utils.text2image import generate_image
+
+from ..utils.text2image import generate_image
+from ..database.mongodb import get_mongodb_collection
 
 class Highlight(BaseModel):
     id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))

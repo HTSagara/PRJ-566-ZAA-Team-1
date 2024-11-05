@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, Request, HTTPException, status
-from auth import verify_jwt_token, auth_middleware, get_user_info
-from pydantic import BaseModel
-from dotenv import load_dotenv
 import os
 import boto3
+from fastapi import APIRouter, Request, HTTPException, status
+from pydantic import BaseModel
+from dotenv import load_dotenv
+from ..auth import verify_jwt_token, get_user_info
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -14,9 +14,7 @@ print(f"COGNITO_REGION loaded: {COGNITO_REGION}")
 # Initialize Cognito Identity Provider client
 cognito_client = boto3.client('cognito-idp', region_name=COGNITO_REGION)
 
-# These routes are protected by auth_middleware
-router = APIRouter(dependencies=[Depends(auth_middleware)])
-
+router = APIRouter()
 
 @router.get("/user", tags=["user"])
 async def read_user_me(request: Request):
