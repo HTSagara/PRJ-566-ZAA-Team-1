@@ -31,7 +31,6 @@ async def delete_user(request: Request):
         # Delete the user from the Cognito User Pool
         cognito_client.admin_delete_user(
             UserPoolId=COGNITO_USERPOOL_ID,
-            # Username=username
             Username=request.state.user["username"]
         )
         return {"message": "User successfully deleted"}

@@ -45,9 +45,7 @@ async def get_all_highlights(request: Request, book_id: str):
     # Call the static method with required arguments
     highlight_instance = Highlight(book_id=book_id, owner_id=owner_id)
     highlights = highlight_instance.get_highlights()
-    # highlights_dict = [highlight.model_dump() for highlight in highlights]
 
-    # return JSONResponse(content=highlights_dict)
     return JSONResponse(content=highlights)
 
 
