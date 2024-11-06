@@ -15,24 +15,17 @@ import * as DocumentPicker from "expo-document-picker";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
-import { AuthContext, type User } from "@/utilities/auth";
 import { RootStackParamList } from "./types"; // Import your defined types
 import Loading from "@/components/Loading";
-
-// Define the book type
-interface Book {
-  id: string;
-  title: string;
-  author: string;
-  image?: string;
-}
+import { AuthContext, type User } from "@/utilities/auth";
+import { BookContext } from "@/utilities/book";
 
 const { width } = Dimensions.get("window");
 
 export default function LibraryScreen() {
   const user = useContext(AuthContext) as User;
+  const { books, setBooks } = useContext(BookContext);
 
-  const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [uploadingBook, setUploadingBook] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -119,6 +112,7 @@ export default function LibraryScreen() {
   useEffect(() => {
     const fetchBooks = async () => {
       console.debug("inside library fetchBooks()");
+      setLoading(true);
 
       try {
         const response = await fetch("http://localhost:8000/books", {
@@ -142,7 +136,6 @@ export default function LibraryScreen() {
         setLoading(false);
       }
     };
-
     fetchBooks();
   }, []);
 
@@ -191,7 +184,9 @@ export default function LibraryScreen() {
             >
               <View style={styles.card}>
                 <Image
-                  source={{ uri: item.image || "https://placehold.co/100x150" }}
+                  source={{
+                    uri: item.imgUrl || "https://placehold.co/100x150",
+                  }}
                   style={styles.bookImage}
                   resizeMode="contain"
                 />
@@ -369,7 +364,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     width: "100%",
-    //marginTop: 20,
   },
   button: {
     borderRadius: 10,

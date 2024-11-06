@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,23 +11,19 @@ import {
   Modal,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { getUser } from "@/utilities/auth";
+import { AuthContext, User, getUser } from "@/utilities/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { router } from "expo-router";
-
-// Define the types for the book object and route params
-interface Book {
-  title: string;
-  author: string;
-  imgUrl?: string;
-  type: string;
-  size: number;
-}
+import { BookContext, Book } from "@/utilities/book";
+import Loading from "@/components/Loading";
 
 export default function BookDetailsScreen() {
+  const user = useContext(AuthContext) as User;
+  const { setBooks } = useContext(BookContext);
+
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
@@ -35,7 +31,8 @@ export default function BookDetailsScreen() {
   const [isClocked, setIsClocked] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [modelVisible, setModelVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [deletingBook, setDeletingBook] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "bookReader">>();
@@ -149,14 +146,9 @@ export default function BookDetailsScreen() {
   };
 
   const handleConfirm = async () => {
-    setModelVisible(false);
-    try {
-      const user = await getUser();
-      if (!user) {
-        Alert.alert("Error", "No user found.");
-        return;
-      }
+    setDeletingBook(true);
 
+    try {
       const response = await fetch(backendURL + `/book/${bookId}`, {
         method: "DELETE",
         headers: {
@@ -166,21 +158,28 @@ export default function BookDetailsScreen() {
 
       if (response.ok) {
         const data = await response.json();
-        alert(data.message);
+        console.debug(data.message);
+
+        setBooks((books: Book[]) => books.filter((book) => book.id !== bookId));
+        setDeletingBook(false);
+        setModelVisible(false);
+
         router.navigate("./library");
       } else {
         const error = await response.json();
-        alert(`Error while deleting book: ${error.message}`);
+        console.log(`Exception while deleting book: ${error}.`);
+        setDeletingBook(false);
+        setDeleteError(true);
       }
     } catch (err) {
       console.log(`Exception while deleting book: ${err}.`);
-      Alert.alert("Error", "Failed to delete book.");
+      setDeletingBook(false);
+      setDeleteError(true);
     }
   };
 
   const handleCancel = () => {
     setModelVisible(false);
-    setIsLoading(false);
   };
 
   return (
@@ -189,7 +188,9 @@ export default function BookDetailsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
+
         <Text style={styles.headerTitle}>About Document</Text>
+
         <TouchableOpacity
           onPress={() => {
             navigation.navigate("bookReader", { bookId });
@@ -198,6 +199,7 @@ export default function BookDetailsScreen() {
           <Text style={styles.readButton}>Read</Text>
         </TouchableOpacity>
       </View>
+
       <Modal
         transparent={true}
         visible={modelVisible}
@@ -206,13 +208,32 @@ export default function BookDetailsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalText}>
-              {"Are you sure you want to Delete this book?"}
-            </Text>
-            <View style={styles.buttonContainer}>
-              <Button title="Confirm" onPress={handleConfirm} />
-              <Button title="Cancel" onPress={handleCancel} />
-            </View>
+            {deletingBook ? (
+              <Loading message="Deleting book..." />
+            ) : deleteError ? (
+              <>
+                <Text style={styles.modalText}>Error deleting book</Text>
+                <View style={styles.buttonContainer}>
+                  <Button
+                    title="Close"
+                    onPress={() => {
+                      setModelVisible(false);
+                      setDeleteError(false);
+                    }}
+                  />
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalText}>
+                  {"Are you sure you want to Delete this book?"}
+                </Text>
+                <View style={styles.buttonContainer}>
+                  <Button title="Confirm" onPress={handleConfirm} />
+                  <Button title="Cancel" onPress={handleCancel} />
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -226,6 +247,7 @@ export default function BookDetailsScreen() {
 
       <View style={styles.bookInfo}>
         <Text style={styles.bookTitle}>{book.title}</Text>
+
         <Text style={styles.bookAuthor}>by {book.author}</Text>
 
         <View style={styles.actionIcons}>
@@ -259,9 +281,11 @@ export default function BookDetailsScreen() {
               }}
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => {
-            navigation.navigate("highlights", { bookId: bookId });
-          }}>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("highlights", { bookId: bookId });
+            }}
+          >
             <Icon
               name="quote-left"
               size={24}
@@ -271,6 +295,7 @@ export default function BookDetailsScreen() {
               }}
             />
           </TouchableOpacity>
+
           <TouchableOpacity onPress={handleDeleteAction}>
             <Icon
               name="trash"
@@ -281,6 +306,7 @@ export default function BookDetailsScreen() {
         </View>
 
         <Text style={styles.bookMeta}>Last time read: (Date and Time)</Text>
+
         <Text style={styles.bookMeta}>
           File Type: {book.type}, Size: {formatFileSize(book.size)}
         </Text>
