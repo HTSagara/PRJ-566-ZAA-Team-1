@@ -116,3 +116,43 @@ async def regenerate_highlight_image(request: Request, book_id: str, highlight_i
             "imgUrl": f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
         }
     )
+
+@router.delete("/highlight/{highlight_id}/image", tags=["highlight"])
+async def delete_highlight_image(request: Request, book_id: str, highlight_id: str):
+    owner_id = request.state.user["id"]
+
+    # Query the MongoDB for the book document and find the highlight by ID
+    collection = get_mongodb_collection(owner_id)
+    book_metadata = collection.find_one({"_id": book_id})
+
+    # Extract the highlight based on highlight_id
+    if book_metadata:
+        highlight_data = next((highlight for highlight in book_metadata.get("highlights", []) if highlight["id"] == highlight_id), None)
+    else:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    if not highlight_data:
+        raise HTTPException(status_code=404, detail="Highlight not found")
+
+    # Delete the image from S3 if it exists
+    img_url = highlight_data.get("imgUrl")
+    if img_url:
+        s3_key = f"{owner_id}/{book_id}/{highlight_id}.png"
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=s3_key)
+        except s3_client.exceptions.NoSuchKey:
+            raise HTTPException(status_code=404, detail="Image not found in S3")
+
+        # Set the image URL to null in the database
+        highlight_data["imgUrl"] = None
+        collection.update_one(
+            {"_id": book_id, "highlights.id": highlight_id},
+            {"$set": {"highlights.$.imgUrl": None}}
+        )
+    else:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    return JSONResponse(
+        status_code=200,
+        content={"message": "Successfully removed image from highlight"}
+    )
