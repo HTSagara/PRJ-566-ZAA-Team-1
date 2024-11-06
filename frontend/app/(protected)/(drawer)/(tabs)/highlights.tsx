@@ -73,7 +73,7 @@ export default function ShowBookHighlights() {
                 <View style={styles.container}>
                     <View style={styles.header}>
                         <TouchableOpacity onPress={() =>
-                            navigation.navigate("bookdetails", { bookId })}
+                            navigation.navigate("bookDetails", { bookId })}
                         >
                             <Icon name="chevron-left" size={24} color="#000" />
                         </TouchableOpacity>
