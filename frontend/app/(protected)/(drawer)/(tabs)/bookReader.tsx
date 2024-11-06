@@ -182,13 +182,20 @@ const BookReader: React.FC = () => {
   }, [setSelection, rendition, highlights]);
 
   const handleRegenerate = async () => {
-    if (!selectedHighlight) return;
+    if (!selectedHighlight || !selectedHighlight.imgUrl) return;
 
     try {
-      console.log(
-        `***** THIS IS THE SELECTED imgURL ${selectedHighlight.imgUrl}`
-      );
-      const url = `http://localhost:8000/book/${bookId}/highlight/${selectedHighlight.imgUrl}`;
+      // Extract the highlight ID from the imgUrl
+      const imgUrl = selectedHighlight.imgUrl;
+      const highlightId = imgUrl.split("/").pop()?.replace(".png", "");
+
+      if (!highlightId) {
+        console.error("Unable to extract highlight ID from imgUrl:", imgUrl);
+        return;
+      }
+
+      // Construct the URL using the extracted highlight ID
+      const url = `http://localhost:8000/book/${bookId}/highlight/${highlightId}`;
       const response = await fetch(url, {
         method: "PUT",
         headers: user.authorizationHeaders(),
