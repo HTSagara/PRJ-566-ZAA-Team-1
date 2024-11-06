@@ -3,7 +3,6 @@ import {
   Modal,
   View,
   Text,
-  Alert,
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
@@ -11,17 +10,15 @@ import {
 } from "react-native";
 import { ReactReader } from "react-reader";
 import { useRoute } from "@react-navigation/native";
-import { getUser } from "@/utilities/auth";
 import type { Rendition, Contents } from "epubjs";
 import Section from "epubjs/types/section";
 
-import Loading from "@/components/Loading";
 import { AuthContext, type User } from "@/utilities/auth";
+import { Highlight } from "./highlights";
 
 interface Selection {
   text: string;
   location: string;
-  id: string;
   imgUrl?: string;
 }
 
@@ -30,7 +27,7 @@ const BookReader: React.FC = () => {
   const ctxMenuRef = useRef<any>(null);
 
   const route = useRoute();
-  const { bookId } = route.params as { bookId: string };
+  const { bookId, userHighlight } = route.params as { bookId: string, userHighlight: Highlight };
 
   const [location, setLocation] = useState<string | number>(0);
   const [bookUrl, setBookUrl] = useState<string | null>(null);
@@ -38,10 +35,11 @@ const BookReader: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [imageModalVisible, setImageModalVisible] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<boolean>(false);
+  const [saveMessage, setSaveMessage] = useState<string>("Saving highlight...");
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string>("Error saving highlight.");
   const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(null);
-  const [saveError, setSaveError] = useState(false);
-  const [saveMessage, setSaveMessage] = useState("Saving highlight...");
-  const [saveErrorMessage, setSaveErrorMessage] = useState("Error saving highlight.");
 
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -61,7 +59,6 @@ const BookReader: React.FC = () => {
 
     const fetchBook = async () => {
       try {
-        // Get book URL
         let response = await fetch(`http://localhost:8000/book/${bookId}`, {
           method: "GET",
           headers: {
@@ -77,7 +74,6 @@ const BookReader: React.FC = () => {
           setError("Failed to fetch book.");
         }
 
-        // Get highlights
         const highlightsUrl = `http://localhost:8000/book/${bookId}/highlights`;
         response = await fetch(highlightsUrl, {
           method: "GET",
@@ -90,6 +86,8 @@ const BookReader: React.FC = () => {
         } else {
           console.error("Failed to fetch book highlights.");
         }
+
+        if (userHighlight && userHighlight.location) setLocation(userHighlight.location);
       } catch (error) {
         console.error("Error fetching book:", error);
         setError("Error fetching book.");
@@ -99,17 +97,16 @@ const BookReader: React.FC = () => {
     };
 
     fetchBook();
-  }, [bookId]);
+  }, [bookId, user]);
 
   useEffect(() => {
     if (highlights && rendition) {
-      // Add highlights to rendition
       highlights.forEach((highlight) => {
         rendition.annotations.add(
           "highlight",
           highlight.location,
           {},
-          () => handleHighlightClick(highlight.id), // Add click handler with highlight ID
+          () => handleHighlightClick(highlight),
           "hl",
           {
             fill: "red",
@@ -118,32 +115,56 @@ const BookReader: React.FC = () => {
           }
         );
       });
-    }
-  }, [highlights, rendition]);
 
-  const fetchHighlightMetadata = async (highlightId: string) => {
-    try {
-      const url = `http://localhost:8000/book/${bookId}/highlight/${highlightId}`;
-      const response = await fetch(url, {
-        method: "GET",
-        headers: user.authorizationHeaders(),
-      });
+      function setContextMenuHandler(_: Section, view: any) {
+        const iframe = view.iframe as HTMLIFrameElement | null;
+        const iframeDoc = iframe?.contentDocument;
+        const iframeWindow = iframe?.contentWindow;
 
-      if (response.ok) {
-        const data = await response.json();
-        setSelectedHighlight(data); // Set the retrieved highlight data
-        setModalVisible(true); // Open the modal
-      } else {
-        console.error("Failed to fetch highlight metadata:", response.statusText);
+        if (iframeDoc && iframeWindow) {
+          function contextMenuHandler(event: MouseEvent) {
+            event.preventDefault();
+            const textSelection = iframeWindow?.getSelection();
+            if (textSelection && textSelection.toString().length > 0) {
+              const x = event.screenX - window.screenX + 5;
+              const y = event.screenY - window.screenY - 275;
+              setContextMenu({ visible: true, x, y });
+            }
+          }
+
+          function dismissMenuHandler(e: MouseEvent) {
+            const menu = ctxMenuRef.current as HTMLElement;
+            if (menu && !menu.contains(e.target as Node) && e.button === 0) {
+              setContextMenu({ visible: false, x: 0, y: 0 });
+            }
+          }
+
+          iframeDoc.addEventListener("contextmenu", contextMenuHandler);
+          iframeDoc.addEventListener("mousedown", dismissMenuHandler);
+        } else {
+          console.error("Unable to find epubjs iframe");
+        }
       }
-    } catch (error) {
-      console.error("Error fetching highlight metadata:", error);
-    }
-  };
 
-  const handleHighlightClick = (highlightId: string) => {
-    fetchHighlightMetadata(highlightId);
-  };
+      function setRenderSelection(cfiRange: string, _: Contents) {
+        if (rendition) {
+          const selection: Selection = {
+            text: rendition.getRange(cfiRange).toString(),
+            location: cfiRange,
+          };
+          setSelection(selection);
+        }
+      }
+
+      rendition.on("rendered", setContextMenuHandler);
+      rendition.on("selected", setRenderSelection);
+
+      return () => {
+        rendition?.off("rendered", setContextMenuHandler);
+        rendition?.off("selected", setRenderSelection);
+      };
+    }
+  }, [setSelection, rendition, highlights]);
 
   const handleHighlight = async () => {
     if (rendition && selection) {
@@ -172,7 +193,6 @@ const BookReader: React.FC = () => {
               "mix-blend-mode": "multiply",
             }
           );
-
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
           setSaveError(false);
         } else {
@@ -200,23 +220,10 @@ const BookReader: React.FC = () => {
           headers: user.authorizationHeaders(),
         });
 
-        if (response.status === 200) {
-          setModalVisible(false);
-          rendition.annotations.add(
-            "highlight",
-            selection.location,
-            {},
-            (e: MouseEvent) => console.log("click on selection", selection.location, e),
-            "hl",
-            {
-              fill: "red",
-              "fill-opacity": "0.5",
-              "mix-blend-mode": "multiply",
-            }
-          );
-
-          rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
-          setSaveError(false);
+        if (response.ok) {
+          const data = await response.json();
+          setGeneratedImageUrl(data.imgUrl || null);
+          setHighlights([...highlights, { ...selection, imgUrl: data.imgUrl }]);
         } else {
           console.error("Failed to visualize highlight", response);
           setSaveError(true);
@@ -226,8 +233,12 @@ const BookReader: React.FC = () => {
         setSaveError(true);
       }
     }
-
     setContextMenu({ visible: false, x: 0, y: 0 });
+  };
+
+  const handleHighlightClick = (highlight: Selection) => {
+    setSelectedHighlight(highlight);
+    setImageModalVisible(true);
   };
 
   // Show loading indicator while fetching
@@ -240,7 +251,6 @@ const BookReader: React.FC = () => {
     );
   }
 
-  // Show error message if something goes wrong
   if (error) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -249,7 +259,6 @@ const BookReader: React.FC = () => {
     );
   }
 
-  // Display the ReactReader only when the bookUrl is ready
   return (
     <View style={{ flex: 1 }}>
       {bookUrl ? (
@@ -281,35 +290,54 @@ const BookReader: React.FC = () => {
         </View>
       )}
 
-      {modalVisible && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalContainer}
-            onPressOut={() => setModalVisible(false)}
-          >
-            <View style={styles.modalView}>
-              {selectedHighlight?.imgUrl ? (
-                <>
-                  <Text>Highlight image:</Text>
-                  <br ></br>
-                  <Image
-                    source={{ uri: selectedHighlight.imgUrl }}
-                    style={{ width: 330, height: 330 }}
-                    resizeMode="contain"
-                  />
-                </>
-              ) : (
-                <Text>No image generated for this highlight.</Text>
-              )}
-            </View>
-          </TouchableOpacity>
-        </Modal>
-      )}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={imageModalVisible}
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            {selectedHighlight?.imgUrl ? (
+              <>
+                <Text>Generated Image:</Text>
+                <Image
+                  source={{ uri: selectedHighlight.imgUrl }}
+                  style={{ width: 300, height: 300 }}
+                  resizeMode="contain"
+                />
+              </>
+            ) : (
+              <Text>No image available for this highlight.</Text>
+            )}
+            <TouchableOpacity onPress={() => setImageModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(!modalVisible)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            {!saveError ? (
+              <Text>{saveMessage}</Text>
+            ) : (
+              <>
+                <Text>{saveErrorMessage}</Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -340,14 +368,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 50,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+  },
+  closeButtonText: {
+    marginTop: 20,
+    color: "blue",
+    fontWeight: "bold",
   },
 });
 
