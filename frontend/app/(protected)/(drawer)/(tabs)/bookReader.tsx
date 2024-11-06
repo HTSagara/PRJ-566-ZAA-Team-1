@@ -51,6 +51,7 @@ const BookReader: React.FC = () => {
   const [rendition, setRendition] = useState<Rendition | undefined>(undefined);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
+  // This useEffect is triggered when the bookReader page is called and it's job is to fetch book content from S3
   useEffect(() => {
     if (!bookId) {
       setError("No bookId provided");
@@ -88,7 +89,10 @@ const BookReader: React.FC = () => {
           console.error("Failed to fetch book highlights.");
         }
 
-        if (userHighlight && userHighlight.location) setLocation(userHighlight.location);
+        if (userHighlight && userHighlight.location){
+          setLocation(userHighlight.location)
+        }
+
       } catch (error) {
         console.error("Error fetching book:", error);
         setError("Error fetching book.");
@@ -100,6 +104,7 @@ const BookReader: React.FC = () => {
     fetchBook();
   }, [bookId, user]);
 
+  // This useEffect is triggered when user creates a Highlight while in the readMode
   useEffect(() => {
     if (highlights && rendition) {
       highlights.forEach((highlight) => {
@@ -194,6 +199,11 @@ const BookReader: React.FC = () => {
               "mix-blend-mode": "multiply",
             }
           );
+          // @ts-ignore: DO NOT REMOVE THIS COMMENT
+          // This annotation was added because typescript throws an error 
+          //   for getContents()[0]
+          // The return type for getContents() is outdated and actually returns 
+          //   Contents[] instead of Contents
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
           setSaveError(false);
         } else {
@@ -334,7 +344,7 @@ const BookReader: React.FC = () => {
             ) : (
               <>
                 <Text>{saveErrorMessage}</Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <TouchableOpacity onPress={() => { setModalVisible(false); setSaveError(false); }}>
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
               </>

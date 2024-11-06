@@ -198,7 +198,6 @@ export default function BookDetailsScreen() {
           <Text style={styles.readButton}>Read</Text>
         </TouchableOpacity>
       </View>
-
       <Modal
         transparent={true}
         visible={modelVisible}
@@ -267,7 +266,7 @@ export default function BookDetailsScreen() {
               name="quote-left"
               size={24}
               style={{
-                color: "blue",
+                color: "gray",
                 marginHorizontal: 10,
               }}
             />
@@ -312,7 +311,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 10,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   headerTitle: {
     fontSize: 18,

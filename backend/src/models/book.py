@@ -1,4 +1,3 @@
-# src/models/book.py
 from fastapi import HTTPException
 from io import BytesIO
 import hashlib
@@ -7,8 +6,9 @@ import os
 import pymupdf
 from datetime import datetime
 from dotenv import load_dotenv
-from database.mongodb import db
-from database.s3_db import write_file_data
+
+from ..database.mongodb import db
+from ..database.s3_db import write_file_data
 
 load_dotenv()
 BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")

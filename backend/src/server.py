@@ -1,3 +1,5 @@
+import os
+import requests
 from fastapi import FastAPI, HTTPException, status, Depends, Request
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,13 +7,9 @@ from datetime import datetime, timezone
 from urllib.parse import urlencode
 from dotenv import load_dotenv
 from urllib.parse import urlencode
-import requests
-import os
-
-from auth import auth_middleware
-from routes import user
-from routes import book
-from routes import text2image
+from .auth import auth_middleware
+from .routes import user
+from .routes import book
 
 load_dotenv()
 COGNITO_CLIENT_ID = os.getenv("COGNITO_CLIENT_ID")
@@ -28,10 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# include routes
-app.include_router(user.router)
-app.include_router(book.router)
-app.include_router(text2image.router)
+# Include routes and protect with auth_middleware 
+app.include_router(user.router, dependencies=[Depends(auth_middleware)])
+app.include_router(book.router, dependencies=[Depends(auth_middleware)])
 
 # Public Route Example (no authentication required)
 @app.get("/public")

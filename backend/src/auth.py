@@ -4,6 +4,8 @@ from jose import jwt, JWTError
 import requests
 import os
 
+from .models.book import hash_email
+
 load_dotenv()
 COGNITO_CLIENT_ID = os.getenv("COGNITO_CLIENT_ID")
 COGNITO_ISSUER = os.getenv("COGNITO_ISSUER")
@@ -22,7 +24,15 @@ async def auth_middleware(request: Request):
     token = auth_header.split(" ")[1]
 
     # Verify token
-    verify_jwt_token(token)
+    decoded_token = verify_jwt_token(token)
+    username = decoded_token.get("sub")
+    if not username:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User identifier not found in token")
+
+    # Attach user info to request
+    user = get_user_info(token)
+    user["id"] = hash_email(user["email"])
+    request.state.user = user
 
     return request
 
