@@ -12,6 +12,7 @@ import { ReactReader } from "react-reader";
 import { useRoute } from "@react-navigation/native";
 import type { Rendition, Contents } from "epubjs";
 import Section from "epubjs/types/section";
+import Loading from "@/components/Loading";
 
 import { AuthContext, type User } from "@/utilities/auth";
 import { Highlight } from "./highlights";
@@ -231,6 +232,8 @@ const BookReader: React.FC = () => {
       } catch (error) {
         console.error("Failed to visualize highlight", error);
         setSaveError(true);
+      } finally {
+        setModalVisible(false);
       }
     }
     setContextMenu({ visible: false, x: 0, y: 0 });
@@ -300,10 +303,11 @@ const BookReader: React.FC = () => {
           <View style={styles.modalView}>
             {selectedHighlight?.imgUrl ? (
               <>
-                <Text>Generated Image:</Text>
+                <Text>Generated image:</Text>
+                <br/>
                 <Image
                   source={{ uri: selectedHighlight.imgUrl }}
-                  style={{ width: 300, height: 300 }}
+                  style={{ width: 325, height: 325 }}
                   resizeMode="contain"
                 />
               </>
@@ -326,7 +330,7 @@ const BookReader: React.FC = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalView}>
             {!saveError ? (
-              <Text>{saveMessage}</Text>
+              <Loading message={saveMessage} />
             ) : (
               <>
                 <Text>{saveErrorMessage}</Text>
