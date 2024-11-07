@@ -15,14 +15,8 @@ import Ionicons from "react-native-vector-icons/Ionicons"
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { FlatList } from "react-native-gesture-handler";
-
-//defining highlight interface
-export interface Highlight {
-    id: string;
-    text: string;
-    location: string;
-    imgUrl?: string;
-}
+import { Highlight } from "@/utilities/data-input";
+import { getAllHighlightsByBookId } from "@/utilities/backendService";
 
 export default function ShowBookHighlights() {
     const route = useRoute();
@@ -41,23 +35,10 @@ export default function ShowBookHighlights() {
                     Alert.alert("Error", "No user found.");
                     return;
                 }
+                
+                const data = await getAllHighlightsByBookId(user, bookId);
+                setHighlight(data);
 
-                const response = await fetch(backendURL + `/book/${bookId}/highlights`, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${user.accessToken}`,
-                    },
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log(data)
-                    setHighlight(data)
-                    // alert(data.message);
-                } else {
-                    const error = await response.json();
-                    alert(`Error while getting book highlights: ${error.message}.`);
-                }
             } catch (err) {
                 console.log(`Exception while calling the API: ${err}.`);
                 Alert.alert("Error", "Failed during the API call.");
@@ -65,7 +46,7 @@ export default function ShowBookHighlights() {
         }
 
         fetchHighlights()
-    }, [bookId, backendURL]); Ionicons
+    }, [bookId, backendURL]);
 
     return (
         <div>
@@ -81,6 +62,19 @@ export default function ShowBookHighlights() {
                     </View>
                 </View>
             </div>
+            {highlight.length <= 0 ? (
+                <View
+                style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 8,
+                }}
+                >
+                <Text>There are no highlights created for this book ...</Text>
+                <Text>Create a highlight while in reading mode.</Text>
+                </View>
+            ) : (
             <FlatList
                 data={highlight}
                 renderItem={({ item }) => (
@@ -110,7 +104,7 @@ export default function ShowBookHighlights() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.cardList}
                 numColumns={2}
-            />
+            />)}
 
             {/*Modal View*/}
             <Modal

@@ -1,6 +1,6 @@
 import os
 import boto3
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, status, Response
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -46,8 +46,11 @@ async def get_all_highlights(request: Request, book_id: str):
     highlight_instance = Highlight(book_id=book_id, owner_id=owner_id)
     highlights = highlight_instance.get_highlights()
 
-    return JSONResponse(content=highlights)
+    # If there are no highlights, return a 204 No Content status
+    if not highlights:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    return JSONResponse(content=highlights)
 
 
 

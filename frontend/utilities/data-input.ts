@@ -14,7 +14,16 @@ const BookContext = createContext<{
   setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
 }>({
   books: [],
-  setBooks: () => {},
+  setBooks: () => { },
 });
+
+
+//defining highlight interface
+export interface Highlight {
+  id: string;
+  text: string;
+  location: string;
+  imgUrl?: string;
+}
 
 export { BookContext, type Book };

@@ -18,7 +18,8 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types"; // Import your defined types
 import Loading from "@/components/Loading";
 import { AuthContext, type User } from "@/utilities/auth";
-import { BookContext } from "@/utilities/book";
+import { BookContext } from "@/utilities/data-input";
+import { getAllBooks, uploadBookToDB } from "@/utilities/backendService";
 
 const { width } = Dimensions.get("window");
 
@@ -51,7 +52,6 @@ export default function LibraryScreen() {
 
   const uploadBook = async () => {
     console.debug("inside library uploadBook()");
-
     setUploadingBook(true);
 
     if (selectedFile && selectedFile.name.endsWith(".epub")) {
@@ -79,23 +79,8 @@ export default function LibraryScreen() {
       }
 
       try {
-        const response = await fetch("http://localhost:8000/book", {
-          method: "POST",
-          body: formData,
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
-        });
-
-        if (response.status === 200) {
-          console.log("Book uploaded successfully!");
-          Alert.alert("Success", "Book uploaded successfully!");
-          const newBookData = await response.json();
-          setBooks([...books, newBookData]);
-        } else {
-          console.error("Failed to upload book", response);
-          Alert.alert("Error", "Failed to upload book");
-        }
+        const newBookData = await uploadBookToDB(user, formData);
+        setBooks([...books, newBookData]);
       } catch (error) {
         console.error("Error uploading book:", error);
         Alert.alert("Error", "An error occurred during upload.");
@@ -111,32 +96,19 @@ export default function LibraryScreen() {
 
   useEffect(() => {
     const fetchBooks = async () => {
-      console.debug("inside library fetchBooks()");
-      setLoading(true);
+        setLoading(true);
 
-      try {
-        const response = await fetch("http://localhost:8000/books", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
+        try {
+          const data = await getAllBooks(user);
           setBooks(data);
-        } else {
-          console.error("Error fetching books:", response.statusText);
-          Alert.alert("Error", "Failed to fetch books");
+        } catch (error) {
+          console.error("Error fetching books:", error);
+          Alert.alert("Error", "An error occurred while fetching books.");
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("Error fetching books:", error);
-        Alert.alert("Error", "An error occurred while fetching books.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBooks();
+      };
+      fetchBooks();
   }, []);
 
   if (loading) {

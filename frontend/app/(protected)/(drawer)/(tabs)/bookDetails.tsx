@@ -17,8 +17,9 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { router } from "expo-router";
-import { BookContext, Book } from "@/utilities/book";
+import { BookContext, Book } from "@/utilities/data-input";
 import Loading from "@/components/Loading";
+import { deleteUserSelectedBook, getBookMetaData } from "@/utilities/backendService";
 
 export default function BookDetailsScreen() {
   const user = useContext(AuthContext) as User;
@@ -48,22 +49,9 @@ export default function BookDetailsScreen() {
           return;
         }
 
-        const response = await fetch(
-          `http://localhost:8000/book/info/${bookId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${user.accessToken}`,
-            },
-          },
-        );
+        const data = await getBookMetaData(user, bookId);
+        setBook(data);
 
-        if (response.ok) {
-          const data = await response.json();
-          setBook(data);
-        } else {
-          Alert.alert("Error", "Failed to fetch book details");
-        }
       } catch (error) {
         Alert.alert("Error", "An error occurred while fetching book details.");
       } finally {
@@ -149,25 +137,18 @@ export default function BookDetailsScreen() {
     setDeletingBook(true);
 
     try {
-      const response = await fetch(backendURL + `/book/${bookId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
-      });
+      
+      const response = await deleteUserSelectedBook(user, bookId);
 
-      if (response.ok) {
-        const data = await response.json();
-        console.debug(data.message);
-
+      if (response) {
         setBooks((books: Book[]) => books.filter((book) => book.id !== bookId));
         setDeletingBook(false);
         setModelVisible(false);
 
         router.navigate("./library");
-      } else {
-        const error = await response.json();
-        console.log(`Exception while deleting book: ${error}.`);
+      }
+      else
+      {
         setDeletingBook(false);
         setDeleteError(true);
       }

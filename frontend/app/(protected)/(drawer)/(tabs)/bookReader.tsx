@@ -16,6 +16,7 @@ import Loading from "@/components/Loading";
 
 import { AuthContext, type User } from "@/utilities/auth";
 import { Highlight } from "./highlights";
+import { getAllHighlightsByBookId, getBookByBookId } from "@/utilities/backendService";
 
 interface Selection {
   text: string;
@@ -61,34 +62,12 @@ const BookReader: React.FC = () => {
 
     const fetchBook = async () => {
       try {
-        let response = await fetch(`http://localhost:8000/book/${bookId}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
-        });
+        const response = await getBookByBookId(user, bookId);
+        setBookUrl(response);
 
-        if (response.ok) {
-          const data = await response.json();
-          setBookUrl(data.url);
-        } else {
-          console.error("Error fetching book:", response.statusText);
-          setError("Failed to fetch book.");
-        }
-
-        const highlightsUrl = `http://localhost:8000/book/${bookId}/highlights`;
-        response = await fetch(highlightsUrl, {
-          method: "GET",
-          headers: user.authorizationHeaders(),
-        });
-
-        if (response.status === 200) {
-          const data = await response.json();
-          setHighlights(data);
-        } else {
-          console.error("Failed to fetch book highlights.");
-        }
-
+        const data = await getAllHighlightsByBookId(user, bookId);
+        setHighlights(data)
+        
         if (userHighlight && userHighlight.location){
           setLocation(userHighlight.location)
         }
