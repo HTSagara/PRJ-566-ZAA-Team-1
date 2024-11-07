@@ -187,7 +187,7 @@ const BookReader: React.FC = () => {
     try {
       // Extract the highlight ID from the imgUrl
       const imgUrl = selectedHighlight.imgUrl;
-      const highlightId = imgUrl.split("/").pop()?.replace(".png", "");
+      const highlightId = imgUrl.split("/");
 
       if (!highlightId) {
         console.error("Unable to extract highlight ID from imgUrl:", imgUrl);
