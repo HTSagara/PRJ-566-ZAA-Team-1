@@ -14,8 +14,8 @@ import type { Rendition, Contents } from "epubjs";
 import Section from "epubjs/types/section";
 import Loading from "@/components/Loading";
 
-import { AuthContext, type User } from "@/utilities/auth";
-import { Highlight } from "./highlights";
+import { AuthContext, type User } from "@/utilities/authContext";
+import { Highlight } from "@/utilities/backendService";
 import { getAllHighlightsByBookId, getBookByBookId } from "@/utilities/backendService";
 
 interface Selection {

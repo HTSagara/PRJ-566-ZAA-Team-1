@@ -1,9 +1,27 @@
 // utilities/backendService.ts
-import { BookContext, Book, Highlight } from "./data-input";
+import { BookContext, Book, Highlight } from "./bookContent";
 import { Alert } from "react-native";
-import { User } from "./auth";
+import { User } from "./authContext";
 
 const backendURL = process.env.EXPO_PUBLIC_BACKEND_API_URL;
+
+// Book interface
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  imgUrl?: string;
+  type: string;
+  size: number;
+}
+
+// Highlight interface
+export interface Highlight {
+  id: string;
+  text: string;
+  location: string;
+  imgUrl?: string;
+}
 
 // This method will fetch all the books for the currently logged
 export async function getAllBooks(user: User) {
@@ -126,4 +144,25 @@ export async function getAllHighlightsByBookId(user: User, bookId: string) {
         const error = await response.json();
         alert(`Error while getting book highlights: ${error.message}.`);
     }
+}
+
+// Delete highlight function
+export async function deleteHighlight(user:User, bookId: string, highlightId: string) {
+  const response = await fetch(backendURL + `/book/${bookId}/highlight/${highlightId}`, {
+    method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${user.accessToken}`,
+      },
+  });
+
+  // handle the response
+  if(response.ok)
+  {
+    return true;
+  }
+  else {
+    const errorData = await response.json();
+    throw new Error(`Failed to delete highlight: ${errorData.message}`);
+  }
 }

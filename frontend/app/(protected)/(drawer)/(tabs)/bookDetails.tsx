@@ -11,13 +11,14 @@ import {
   Modal,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { AuthContext, User, getUser } from "@/utilities/auth";
+import { AuthContext, User, getUser } from "@/utilities/authContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { router } from "expo-router";
-import { BookContext, Book } from "@/utilities/data-input";
+import { BookContext } from "@/utilities/bookContent";
+import { Book } from "@/utilities/backendService";
 import Loading from "@/components/Loading";
 import { deleteUserSelectedBook, getBookMetaData } from "@/utilities/backendService";
 

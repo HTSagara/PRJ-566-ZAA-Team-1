@@ -17,8 +17,8 @@ import { StackNavigationProp } from "@react-navigation/stack";
 
 import { RootStackParamList } from "./types"; // Import your defined types
 import Loading from "@/components/Loading";
-import { AuthContext, type User } from "@/utilities/auth";
-import { BookContext } from "@/utilities/data-input";
+import { AuthContext, type User } from "@/utilities/authContext";
+import { BookContext } from "@/utilities/bookContent";
 import { getAllBooks, uploadBookToDB } from "@/utilities/backendService";
 
 const { width } = Dimensions.get("window");

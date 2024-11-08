@@ -66,7 +66,7 @@ def generate_image(prompt: str, owner_id: str, highlight_id: str, book_id: str):
 
     # Prepare file name and S3 path
     file_name = f"{highlight_id}.png"
-    s3_key = f"{owner_id}/{book_id}/{file_name}"
+    s3_key = f"{owner_id}/{book_id}/images/{file_name}"
 
     # Upload the image data to S3 with public-read access
     s3_client.upload_fileobj(io.BytesIO(img_data), S3_BUCKET_NAME, s3_key)

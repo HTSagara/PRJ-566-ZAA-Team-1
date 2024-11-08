@@ -8,7 +8,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedTextInput } from "@/components/ThemedTextInput";
 import { ThemedButton } from "@/components/ThemedButton";
 
-import { Auth, AuthContext, User, getUser } from "@/utilities/auth";
+import { Auth, AuthContext, User, getUser } from "@/utilities/authContext";
 
 interface UserInfo {
   name: string;
