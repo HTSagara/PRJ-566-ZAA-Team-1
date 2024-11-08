@@ -77,6 +77,8 @@ async def delete_highlight(request: Request, book_id: str, highlightid: str):
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Successfully deleted highlight!"})
 
 
+
+
 @router.put("/highlight/{highlight_id}", tags=["highlight"])
 async def regenerate_highlight_image(request: Request, book_id: str, highlight_id: str):
     owner_id = request.state.user["id"]
@@ -114,6 +116,9 @@ async def regenerate_highlight_image(request: Request, book_id: str, highlight_i
             "imgUrl": f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
         }
     )
+
+
+
 
 @router.delete("/highlight/{highlight_id}/image", tags=["highlight"])
 async def delete_highlight_image(request: Request, book_id: str, highlight_id: str):

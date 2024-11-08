@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import Annotated, Optional
 from ...database.book_metadata import extract_metadata
 from ...database.mongodb import get_mongodb_collection
-from ...database.s3_db import delete_file_data, delete_folder 
+from ...database.s3_db import delete_folder 
 from ...models.book import Book, extract_metadata
 from . import highlight
 
