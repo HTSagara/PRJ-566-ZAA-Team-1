@@ -3,7 +3,7 @@ import { Highlight } from "./highlights";
 
 export type RootStackParamList = {
   library: undefined; // No params for library
-  bookdetails: { bookId: string };
+  bookDetails: { bookId: string };
   bookReader: { bookId: string, userHighlight?: Highlight };
   highlights: { bookId: string };
 };

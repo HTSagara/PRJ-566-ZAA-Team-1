@@ -31,7 +31,7 @@ export default function TabLayout() {
 
       {/*Hidden tabs*/}
       <Tabs.Screen
-        name="bookdetails"
+        name="bookDetails"
         options={{
           tabBarButton: () => null, // Hides the tab button
           headerShown: false,

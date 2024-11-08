@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
 import { Redirect, Slot } from "expo-router";
 
-import { User, getUser, AuthContext } from "@/utilities/auth";
 import Loading from "@/components/Loading";
+import { User, getUser, AuthContext } from "@/utilities/auth";
+import { BookContext, type Book } from "@/utilities/book";
 
 export default function DrawerLayout() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [books, setBooks] = useState<Book[]>([]);
+  const bookContext = { books, setBooks };
 
   useEffect(() => {
     async function init() {
-      // console.log("inside protected init()");
-
       const user = await getUser();
       setUser(user);
       setLoading(false);
@@ -35,7 +36,9 @@ export default function DrawerLayout() {
   } else {
     return (
       <AuthContext.Provider value={user}>
-        <Slot />
+        <BookContext.Provider value={bookContext}>
+          <Slot />
+        </BookContext.Provider>
       </AuthContext.Provider>
     );
   }
