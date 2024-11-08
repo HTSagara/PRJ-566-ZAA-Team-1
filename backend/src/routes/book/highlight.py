@@ -77,8 +77,6 @@ async def delete_highlight(request: Request, book_id: str, highlightid: str):
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Successfully deleted highlight!"})
 
 
-
-
 @router.put("/highlight/{highlight_id}", tags=["highlight"])
 async def regenerate_highlight_image(request: Request, book_id: str, highlight_id: str):
     owner_id = request.state.user["id"]
