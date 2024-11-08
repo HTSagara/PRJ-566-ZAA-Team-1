@@ -185,7 +185,6 @@ const BookReader: React.FC = () => {
     if (!selectedHighlight || !selectedHighlight.imgUrl) return;
 
     try {
-      // Extract the highlight ID from the imgUrl
       const imgUrl = selectedHighlight.imgUrl;
       const highlightId = imgUrl.split("/").pop()?.replace(".png", "");
 
@@ -196,48 +195,49 @@ const BookReader: React.FC = () => {
 
       setModalVisible(true); // Show loading modal
 
-      // Construct the URL for the PUT request
-      const url = `http://localhost:8000/book/${bookId}/highlight/${highlightId}`;
-      const response = await fetch(url, {
+      // Send the PUT request to regenerate the image
+      const putUrl = `http://localhost:8000/book/${bookId}/highlight/${highlightId}`;
+      const putResponse = await fetch(putUrl, {
         method: "PUT",
         headers: user.authorizationHeaders(),
       });
 
-      if (response.ok) {
-        // Now make a GET request to retrieve the updated image
-        const imageUrlWithTimestamp = `${selectedHighlight.imgUrl}?t=${new Date().getTime()}`;
+      if (putResponse.ok) {
+        console.log("Image regenerated successfully!");
 
-        // Fetch the updated image to ensure it's the latest version
-        const imageResponse = await fetch(imageUrlWithTimestamp, {
+        // Immediately follow up with a GET request to retrieve the updated highlight
+        const getUrl = `http://localhost:8000/book/${bookId}/highlight/${highlightId}`;
+        const getResponse = await fetch(getUrl, {
+          method: "GET",
           headers: user.authorizationHeaders(),
         });
 
-        if (imageResponse.ok) {
-          setGeneratedImageUrl(null); // Temporarily set to null to force re-render
+        if (getResponse.ok) {
+          const updatedHighlight = await getResponse.json();
 
-          // Set a slight delay to allow the component to reset, then update the image
-          setTimeout(() => {
-            setGeneratedImageUrl(imageUrlWithTimestamp);
+          // Update highlights and the selected highlight to reflect the new image URL
+          setHighlights(
+            highlights.map((h) =>
+              h.location === selectedHighlight.location ? updatedHighlight : h
+            )
+          );
 
-            // Update highlights with the new URL
-            setHighlights(
-              highlights.map((h) =>
-                h.location === selectedHighlight.location
-                  ? { ...h, imgUrl: imageUrlWithTimestamp }
-                  : h
-              )
-            );
-
-            console.log("Image regenerated and updated successfully!");
-          }, 100);
+          // Update the selected highlight to reflect the updated data
+          setSelectedHighlight(updatedHighlight);
         } else {
-          console.error("Failed to retrieve updated image:", imageResponse);
+          console.error(
+            "Failed to fetch the updated highlight data",
+            getResponse
+          );
         }
       } else {
-        console.error("Failed to regenerate image:", response);
+        console.error("Failed to regenerate image:", putResponse);
       }
     } catch (error) {
-      console.error("Error regenerating image:", error);
+      console.error(
+        "Error in image regeneration or fetching updated highlight:",
+        error
+      );
     } finally {
       setModalVisible(false); // Hide loading modal after completion
     }
