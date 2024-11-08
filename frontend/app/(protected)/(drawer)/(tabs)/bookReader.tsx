@@ -184,13 +184,17 @@ const BookReader: React.FC = () => {
   const handleRegenerate = async () => {
     if (!selectedHighlight || !selectedHighlight.imgUrl) return;
 
+    setSaveMessage("Regenerating image...");
+    setModalVisible(true); // Show loading modal
+
     try {
       // Extract the highlight ID from the imgUrl
       const imgUrl = selectedHighlight.imgUrl;
-      const highlightId = imgUrl.split("/");
+      const highlightId = imgUrl.split("/").pop()?.replace(".png", "");
 
       if (!highlightId) {
         console.error("Unable to extract highlight ID from imgUrl:", imgUrl);
+        setModalVisible(false); // Hide modal if there's an error
         return;
       }
 
@@ -204,6 +208,8 @@ const BookReader: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setGeneratedImageUrl(data.imgUrl || null); // Update the image URL in state
+
+        // Refresh the highlights to show the new image URL
         setHighlights(
           highlights.map((h) =>
             h.location === selectedHighlight.location
@@ -211,6 +217,7 @@ const BookReader: React.FC = () => {
               : h
           )
         );
+
         console.log("Image regenerated successfully!");
       } else {
         console.error("Failed to regenerate image:", response);
@@ -219,6 +226,8 @@ const BookReader: React.FC = () => {
     } catch (error) {
       console.error("Error regenerating image:", error);
       console.log("Error", "An error occurred while regenerating the image.");
+    } finally {
+      setModalVisible(false); // Hide the modal after completion
     }
   };
 
