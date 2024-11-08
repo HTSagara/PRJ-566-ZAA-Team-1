@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import Annotated, Optional
 from ...database.book_metadata import extract_metadata
 from ...database.mongodb import get_mongodb_collection
-from ...database.s3_db import delete_file_data 
+from ...database.s3_db import delete_folder 
 from ...models.book import Book, extract_metadata
 from . import highlight
 
@@ -113,7 +113,7 @@ async def get_book_presigned_url(request: Request, book_id: str):
     owner_id = request.state.user["id"]
 
     # Define the S3 key for the book file
-    s3_key = f"{owner_id}/{book_id}"
+    s3_key = f"{owner_id}/{book_id}/book.epub"
 
     try:
         # Generate a pre-signed URL for the S3 object
@@ -145,21 +145,21 @@ async def delete_book(request: Request, book_id: str):
         if result.deleted_count > 0:
             print(f"Book with ID {book_id} successfully deleted.")
 
-            # S3 key where the book file is stored
-            s3_key = f"{owner_id}/{book_id}"
+            # S3 key where the book folder is stored
+            book_folder = f"{owner_id}/{book_id}/"
     
-            # Now deleing book from AWS s3
-            response = delete_file_data(s3_key)
+            # Now deleting book from AWS s3
+            response = delete_folder(book_folder)
 
             # Step 3: Check S3 deletion result
             if response:
-                print(f"Book file {s3_key} successfully deleted from S3.")
+                print(f"Book {book_folder} successfully deleted from S3.")
                 return JSONResponse(
                     content={"message": "Book successfully deleted."},
                     status_code=status.HTTP_200_OK
                 ) 
             else:
-                print(f"Error deleting book file {s3_key} from S3.")
+                print(f"Error deleting book {book_folder} from S3.")
                 return JSONResponse(
                     content={"message": "Error deleting book data from S3."},
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR

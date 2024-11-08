@@ -5,6 +5,7 @@ from fastapi import HTTPException
 
 from ..utils.text2image import generate_image
 from ..database.mongodb import get_mongodb_collection
+from ..database.s3_db import delete_file_data
 
 class Highlight(BaseModel):
     id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -46,6 +47,20 @@ class Highlight(BaseModel):
             raise HTTPException(status_code=404, detail="Missing owner_id for highlight")
 
         collection = get_mongodb_collection(self.owner_id)
+
+        document = collection.find_one(
+            {"_id": self.book_id, "highlights.id": self.id},
+            {"highlights.$": 1}
+        )
+        
+        # Delete highlight image from s3 if it exists
+        if document and "highlights" in document:
+            highlight = document["highlights"][0]
+            if "imgUrl" in highlight and highlight["imgUrl"]:
+                s3_key = f"{self.owner_id}/{self.book_id}/images/{self.id}.png"
+                delete_file_data(s3_key)
+
+        # Delete highlight from mongodb
         result = collection.update_one(
             {"_id": self.book_id},
             {"$pull": {"highlights": {"id": self.id}}}
@@ -64,11 +79,6 @@ class Highlight(BaseModel):
         if not result:
             raise HTTPException(status_code=404, detail="Book not found")
 
-        # Ensure bookId and ownerId are only added if they aren't already in the highlight data
-        # highlights = [
-        #     Highlight(**{**highlight})
-        #     for highlight in result.get("highlights", [])
-        # ]
         return result.get("highlights", [])
 
 

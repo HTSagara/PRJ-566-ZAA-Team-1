@@ -55,3 +55,24 @@ def delete_file_data(key: str):
         # Handle specific S3 errors or log the error message
         print(f"Failed to delete file {key}: {e}")
         return False
+
+def delete_folder(folder_name: str):
+    try:
+        # List all objects in the "folder"
+        objects = s3_client.list_objects_v2(Bucket=S3_BUCKET_NAME, Prefix=folder_name)
+        
+        # Check if the folder contains any objects
+        if 'Contents' in objects:
+            # Create a list of objects to delete
+            delete_keys = [{'Key': obj['Key']} for obj in objects['Contents']]
+            
+            # Delete all objects in the folder
+            s3_client.delete_objects(Bucket=S3_BUCKET_NAME, Delete={'Objects': delete_keys})
+            print(f"Deleted folder: {folder_name}")
+            return True
+        else:
+            print(f"No objects found in folder: {folder_name}")
+            return False
+    except ClientError as e:
+        print(f"An error occurred: {e}")
+        return False
