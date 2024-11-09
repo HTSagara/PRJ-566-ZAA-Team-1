@@ -3,7 +3,7 @@ import { Redirect, Slot } from "expo-router";
 
 import Loading from "@/components/Loading";
 import { User, getUser, AuthContext } from "@/utilities/authContext";
-import { BookContext, type Book } from "@/utilities/bookContent";
+import { BookContext, type Book } from "@/utilities/bookContext";
 
 export default function DrawerLayout() {
   const [user, setUser] = useState<User | null>(null);

@@ -17,7 +17,7 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { router } from "expo-router";
-import { BookContext } from "@/utilities/bookContent";
+import { BookContext } from "@/utilities/bookContext";
 import { Book } from "@/utilities/backendService";
 import Loading from "@/components/Loading";
 import { deleteUserSelectedBook, getBookMetaData } from "@/utilities/backendService";

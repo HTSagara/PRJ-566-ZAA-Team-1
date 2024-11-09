@@ -1,5 +1,4 @@
 // utilities/backendService.ts
-import { BookContext, Book, Highlight } from "./bookContent";
 import { Alert } from "react-native";
 import { User } from "./authContext";
 
