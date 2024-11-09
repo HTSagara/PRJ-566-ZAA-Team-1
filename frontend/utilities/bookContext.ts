@@ -9,4 +9,4 @@ const BookContext = createContext<{
   setBooks: () => {},
 });
 
-export { BookContext, type Book };
+export { BookContext };
