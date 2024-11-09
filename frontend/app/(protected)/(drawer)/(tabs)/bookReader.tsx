@@ -16,7 +16,10 @@ import Loading from "@/components/Loading";
 
 import { AuthContext, type User } from "@/utilities/authContext";
 import { Highlight } from "@/utilities/backendService";
-import { getAllHighlightsByBookId, getBookByBookId } from "@/utilities/backendService";
+import {
+  getAllHighlightsByBookId,
+  getBookByBookId,
+} from "@/utilities/backendService";
 
 interface Selection {
   text: string;
@@ -29,7 +32,10 @@ const BookReader: React.FC = () => {
   const ctxMenuRef = useRef<any>(null);
 
   const route = useRoute();
-  const { bookId, userHighlight } = route.params as { bookId: string, userHighlight: Highlight };
+  const { bookId, userHighlight } = route.params as {
+    bookId: string;
+    userHighlight: Highlight;
+  };
 
   const [location, setLocation] = useState<string | number>(0);
   const [bookUrl, setBookUrl] = useState<string | null>(null);
@@ -40,8 +46,12 @@ const BookReader: React.FC = () => {
   const [imageModalVisible, setImageModalVisible] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>("Saving highlight...");
-  const [saveErrorMessage, setSaveErrorMessage] = useState<string>("Error saving highlight.");
-  const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(null);
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string>(
+    "Error saving highlight.",
+  );
+  const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(
+    null,
+  );
 
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -50,7 +60,9 @@ const BookReader: React.FC = () => {
   }>({ visible: false, x: 0, y: 0 });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [rendition, setRendition] = useState<Rendition | undefined>(undefined);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
+    null,
+  );
 
   // This useEffect is triggered when the bookReader page is called and it's job is to fetch book content from S3
   useEffect(() => {
@@ -66,12 +78,11 @@ const BookReader: React.FC = () => {
         setBookUrl(response);
 
         const data = await getAllHighlightsByBookId(user, bookId);
-        setHighlights(data)
-        
-        if (userHighlight && userHighlight.location){
-          setLocation(userHighlight.location)
-        }
+        setHighlights(data);
 
+        if (userHighlight && userHighlight.location) {
+          setLocation(userHighlight.location);
+        }
       } catch (error) {
         console.error("Error fetching book:", error);
         setError("Error fetching book.");
@@ -97,7 +108,7 @@ const BookReader: React.FC = () => {
             fill: "red",
             "fill-opacity": "0.5",
             "mix-blend-mode": "multiply",
-          }
+          },
         );
       });
 
@@ -176,12 +187,12 @@ const BookReader: React.FC = () => {
               fill: "red",
               "fill-opacity": "0.5",
               "mix-blend-mode": "multiply",
-            }
+            },
           );
           // @ts-ignore: DO NOT REMOVE THIS COMMENT
-          // This annotation was added because typescript throws an error 
+          // This annotation was added because typescript throws an error
           //   for getContents()[0]
-          // The return type for getContents() is outdated and actually returns 
+          // The return type for getContents() is outdated and actually returns
           //   Contents[] instead of Contents
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
           setSaveError(false);
@@ -273,10 +284,16 @@ const BookReader: React.FC = () => {
           ]}
           ref={ctxMenuRef}
         >
-          <TouchableOpacity style={styles.contextMenuItem} onPress={handleHighlight}>
+          <TouchableOpacity
+            style={styles.contextMenuItem}
+            onPress={handleHighlight}
+          >
             <Text>Highlight</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.contextMenuItem} onPress={handleRenderImage}>
+          <TouchableOpacity
+            style={styles.contextMenuItem}
+            onPress={handleRenderImage}
+          >
             <Text>Visualize</Text>
           </TouchableOpacity>
         </View>
@@ -293,7 +310,7 @@ const BookReader: React.FC = () => {
             {selectedHighlight?.imgUrl ? (
               <>
                 <Text>Generated image:</Text>
-                <br/>
+                <br />
                 <Image
                   source={{ uri: selectedHighlight.imgUrl }}
                   style={{ width: 325, height: 325 }}
@@ -323,7 +340,12 @@ const BookReader: React.FC = () => {
             ) : (
               <>
                 <Text>{saveErrorMessage}</Text>
-                <TouchableOpacity onPress={() => { setModalVisible(false); setSaveError(false); }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setModalVisible(false);
+                    setSaveError(false);
+                  }}
+                >
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
               </>

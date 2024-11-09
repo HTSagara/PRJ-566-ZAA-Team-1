@@ -96,19 +96,19 @@ export default function LibraryScreen() {
 
   useEffect(() => {
     const fetchBooks = async () => {
-        setLoading(true);
+      setLoading(true);
 
-        try {
-          const data = await getAllBooks(user);
-          setBooks(data);
-        } catch (error) {
-          console.error("Error fetching books:", error);
-          Alert.alert("Error", "An error occurred while fetching books.");
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchBooks();
+      try {
+        const data = await getAllBooks(user);
+        setBooks(data);
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        Alert.alert("Error", "An error occurred while fetching books.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
   }, []);
 
   if (loading) {

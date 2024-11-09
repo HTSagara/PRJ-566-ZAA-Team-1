@@ -67,7 +67,6 @@ export default function TabLayout() {
           tabBarStyle: { display: "none" },
         }}
       />
-
     </Tabs>
   );
 }

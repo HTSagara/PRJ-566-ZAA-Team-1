@@ -25,7 +25,7 @@ export default function ShowBookHighlights() {
   const [highlight, setHighlight] = useState<Highlight[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(
-    null
+    null,
   ); // Track selected highlight ID
   const [loading, setLoading] = useState(false); // Loading indicator
   const [error, setError] = useState<string | null>(null); // Error handling
@@ -33,122 +33,127 @@ export default function ShowBookHighlights() {
   const { bookId } = route.params as { bookId: string };
   const backendURL = process.env.EXPO_PUBLIC_BACKEND_API_URL;
 
-    useEffect(() => {
-        const fetchHighlights = async () => {
-            try {
-                const user = await getUser();
-                if (!user) {
-                    Alert.alert("Error", "No user found.");
-                    return;
-                }
-                
-                const data = await getAllHighlightsByBookId(user, bookId);
-                setHighlight(data);
-
-            } catch (err) {
-                console.log(`Exception while calling the API: ${err}.`);
-                Alert.alert("Error", "Failed during the API call.");
-            }
-        }
-
-        fetchHighlights()
-    }, [bookId, backendURL]);
-
-    const handleDeleteHighlight = async () => {
-        // console.log("Book ID:", bookId); // Log bookId before deletion
-        // console.log("Selected Highlight ID:", selectedHighlightId); // Log selectedHighlightId before deletion
+  useEffect(() => {
+    const fetchHighlights = async () => {
+      try {
         const user = await getUser();
-          if (!user) {
-            Alert.alert("Error", "No user found.");
+        if (!user) {
+          Alert.alert("Error", "No user found.");
           return;
         }
-    
-        if (!selectedHighlightId || !bookId) {
-          console.log("Error: Missing selected highlight or book ID");
-          return;
-        }
-    
-        setLoading(true);
-        setError(null);
-    
-        try {
-          const data = await deleteHighlight(user,bookId,selectedHighlightId)
-          if(data)
-          {
-            setHighlight((prevHighlights) =>
-              prevHighlights.filter((h) => h.id !== selectedHighlightId)
-            );
-            setModalVisible(false);
-          }          
-        } catch (err) {
-          setError(`Error with deleting highlight: ${err}`);
-        } finally {
-          setLoading(false);
-          setSelectedHighlightId(null);
-        }
-      };
 
-    return (
-        <div>
-            <div>
-                <View style={styles.container}>
-                    <View style={styles.header}>
-                        <TouchableOpacity onPress={() =>
-                            navigation.navigate("bookDetails", { bookId })}
-                        >
-                            <Icon name="chevron-left" size={24} color="#000" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Highlights</Text>
-                    </View>
-                </View>
-            </div>
-            {highlight.length <= 0 ? (
-                <View
-                style={{
-                    flex: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    gap: 8,
-                }}
-                >
-                <Text>There are no highlights created for this book ...</Text>
-                <Text>Create a highlight while in reading mode.</Text>
-                </View>
-            ) : (
-            <FlatList
-                data={highlight}
-                renderItem={({ item }) => (
-                    <TouchableOpacity
-                        onPress={() => {
-                            navigation.navigate('bookReader', { bookId: bookId, userHighlight: item });
-                        }}
-                        style={styles.cardContainer}
-                    >
-                        <View style={styles.card}>
-                            {item.imgUrl && (
-                                <Icon
-                                    name="image"
-                                    size={24}
-                                    style={{ marginHorizontal: 10 }}
-                                />
-                            )}
-                            <Text style={styles.highlightText}>{item.text}</Text>
-                            <TouchableOpacity
-                                onPress={() => {
-                                  setModalVisible(true);
-                                  setSelectedHighlightId(item.id);
-                                }
-                              }
-                            >
-                                <Entypo name="dots-three-vertical" size={24} style={styles.menuIcon} />
-                            </TouchableOpacity>
-                        </View>
-                    </TouchableOpacity>
+        const data = await getAllHighlightsByBookId(user, bookId);
+        setHighlight(data);
+      } catch (err) {
+        console.log(`Exception while calling the API: ${err}.`);
+        Alert.alert("Error", "Failed during the API call.");
+      }
+    };
+
+    fetchHighlights();
+  }, [bookId, backendURL]);
+
+  const handleDeleteHighlight = async () => {
+    // console.log("Book ID:", bookId); // Log bookId before deletion
+    // console.log("Selected Highlight ID:", selectedHighlightId); // Log selectedHighlightId before deletion
+    const user = await getUser();
+    if (!user) {
+      Alert.alert("Error", "No user found.");
+      return;
+    }
+
+    if (!selectedHighlightId || !bookId) {
+      console.log("Error: Missing selected highlight or book ID");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await deleteHighlight(user, bookId, selectedHighlightId);
+      if (data) {
+        setHighlight((prevHighlights) =>
+          prevHighlights.filter((h) => h.id !== selectedHighlightId),
+        );
+        setModalVisible(false);
+      }
+    } catch (err) {
+      setError(`Error with deleting highlight: ${err}`);
+    } finally {
+      setLoading(false);
+      setSelectedHighlightId(null);
+    }
+  };
+
+  return (
+    <div>
+      <div>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("bookDetails", { bookId })}
+            >
+              <Icon name="chevron-left" size={24} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Highlights</Text>
+          </View>
+        </View>
+      </div>
+      {highlight.length <= 0 ? (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Text>There are no highlights created for this book ...</Text>
+          <Text>Create a highlight while in reading mode.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={highlight}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate("bookReader", {
+                  bookId: bookId,
+                  userHighlight: item,
+                });
+              }}
+              style={styles.cardContainer}
+            >
+              <View style={styles.card}>
+                {item.imgUrl && (
+                  <Icon
+                    name="image"
+                    size={24}
+                    style={{ marginHorizontal: 10 }}
+                  />
                 )}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.cardList}
-                numColumns={2}
-            />)}
+                <Text style={styles.highlightText}>{item.text}</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setModalVisible(true);
+                    setSelectedHighlightId(item.id);
+                  }}
+                >
+                  <Entypo
+                    name="dots-three-vertical"
+                    size={24}
+                    style={styles.menuIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          )}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.cardList}
+          numColumns={2}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -177,7 +182,7 @@ export default function ShowBookHighlights() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button]}
-                onPress={handleDeleteHighlight} 
+                onPress={handleDeleteHighlight}
               >
                 <Text style={styles.textStyle}>Delete highlight</Text>
               </TouchableOpacity>

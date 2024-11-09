@@ -20,7 +20,10 @@ import { router } from "expo-router";
 import { BookContext } from "@/utilities/bookContext";
 import { Book } from "@/utilities/backendService";
 import Loading from "@/components/Loading";
-import { deleteUserSelectedBook, getBookMetaData } from "@/utilities/backendService";
+import {
+  deleteUserSelectedBook,
+  getBookMetaData,
+} from "@/utilities/backendService";
 
 export default function BookDetailsScreen() {
   const user = useContext(AuthContext) as User;
@@ -52,7 +55,6 @@ export default function BookDetailsScreen() {
 
         const data = await getBookMetaData(user, bookId);
         setBook(data);
-
       } catch (error) {
         Alert.alert("Error", "An error occurred while fetching book details.");
       } finally {
@@ -138,7 +140,6 @@ export default function BookDetailsScreen() {
     setDeletingBook(true);
 
     try {
-      
       const response = await deleteUserSelectedBook(user, bookId);
 
       if (response) {
@@ -147,9 +148,7 @@ export default function BookDetailsScreen() {
         setModelVisible(false);
 
         router.navigate("./library");
-      }
-      else
-      {
+      } else {
         setDeletingBook(false);
         setDeleteError(true);
       }

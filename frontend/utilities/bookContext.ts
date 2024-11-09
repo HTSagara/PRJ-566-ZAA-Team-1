@@ -6,7 +6,7 @@ const BookContext = createContext<{
   setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
 }>({
   books: [],
-  setBooks: () => { },
+  setBooks: () => {},
 });
 
 export { BookContext, type Book };
