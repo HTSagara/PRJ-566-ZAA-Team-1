@@ -28,7 +28,7 @@ class Book:
 
     def setBookContent(self, book_file: BytesIO):
         # Define the S3 key (where the book will be stored in the bucket)
-        s3_key = f"{self.ownerId}/{self.id}"
+        s3_key = f"{self.ownerId}/{self.id}/book.epub"
         success = write_file_data(s3_key, self.type, book_file)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to upload file to S3")

@@ -3,7 +3,7 @@ import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import LibraryScreen from "./library";
 import BookReader from "./bookReader";
-import BookDetailsScreen from "./bookdetails";
+import BookDetailsScreen from "./bookDetails";
 
 const Stack = createStackNavigator();
 
@@ -18,7 +18,7 @@ export default function LibraryStack() {
       />
       {/* Book Details Screen */}
       <Stack.Screen
-        name="bookdetails"
+        name="bookDetails"
         component={BookDetailsScreen}
         options={{ title: "Book Details" }}
       />

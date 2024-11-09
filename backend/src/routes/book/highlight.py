@@ -102,7 +102,7 @@ async def regenerate_highlight_image(request: Request, book_id: str, highlight_i
         raise HTTPException(status_code=500, detail="Highlight text is missing")
 
     # Prepare S3 key for the image
-    s3_key = f"{owner_id}/{book_id}/{highlight_id}.png"
+    s3_key = f"{owner_id}/{book_id}/images/{highlight_id}.png"
     print(f"S3 Key: {s3_key}")
 
     # Call overwrite_image with the text prompt and S3 key
@@ -116,6 +116,9 @@ async def regenerate_highlight_image(request: Request, book_id: str, highlight_i
             "imgUrl": f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
         }
     )
+
+
+
 
 @router.delete("/highlight/{highlight_id}/image", tags=["highlight"])
 async def delete_highlight_image(request: Request, book_id: str, highlight_id: str):
@@ -137,7 +140,7 @@ async def delete_highlight_image(request: Request, book_id: str, highlight_id: s
     # Delete the image from S3 if it exists
     img_url = highlight_data.get("imgUrl")
     if img_url:
-        s3_key = f"{owner_id}/{book_id}/{highlight_id}.png"
+        s3_key = f"{owner_id}/{book_id}/images/{highlight_id}.png"
         try:
             s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=s3_key)
         except s3_client.exceptions.NoSuchKey:
