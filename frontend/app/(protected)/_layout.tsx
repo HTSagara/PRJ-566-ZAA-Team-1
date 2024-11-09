@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Redirect, Slot } from "expo-router";
 
 import Loading from "@/components/Loading";
-import { User, getUser, AuthContext } from "@/utilities/auth";
-import { BookContext, type Book } from "@/utilities/book";
+import { User, getUser, AuthContext } from "@/utilities/authContext";
+import { BookContext } from "@/utilities/bookContext";
+import { type Book } from "@/utilities/backendService";
 
 export default function DrawerLayout() {
   const [user, setUser] = useState<User | null>(null);
