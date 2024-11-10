@@ -15,8 +15,12 @@ import Section from "epubjs/types/section";
 import Loading from "@/components/Loading";
 import Icon from "react-native-vector-icons/FontAwesome";
 
-import { AuthContext, type User } from "@/utilities/auth";
-import { Highlight } from "./highlights";
+import { AuthContext, type User } from "@/utilities/authContext";
+import { Highlight } from "@/utilities/backendService";
+import {
+  getAllHighlightsByBookId,
+  getBookByBookId,
+} from "@/utilities/backendService";
 
 interface Selection {
   text: string;
@@ -44,11 +48,6 @@ const BookReader: React.FC = () => {
   const [saveError, setSaveError] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>("Saving highlight...");
   const [saveErrorMessage, setSaveErrorMessage] = useState<string>(
-    "Error saving highlight."
-  );
-  const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(
-    null
-  );
 
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -58,7 +57,7 @@ const BookReader: React.FC = () => {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [rendition, setRendition] = useState<Rendition | undefined>(undefined);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
-    null
+    null,
   );
 
   // This useEffect is triggered when the bookReader page is called and it's job is to fetch book content from S3
@@ -71,33 +70,11 @@ const BookReader: React.FC = () => {
 
     const fetchBook = async () => {
       try {
-        let response = await fetch(`http://localhost:8000/book/${bookId}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
-        });
+        const response = await getBookByBookId(user, bookId);
+        setBookUrl(response);
 
-        if (response.ok) {
-          const data = await response.json();
-          setBookUrl(data.url);
-        } else {
-          console.error("Error fetching book:", response.statusText);
-          setError("Failed to fetch book.");
-        }
-
-        const highlightsUrl = `http://localhost:8000/book/${bookId}/highlights`;
-        response = await fetch(highlightsUrl, {
-          method: "GET",
-          headers: user.authorizationHeaders(),
-        });
-
-        if (response.status === 200) {
-          const data = await response.json();
-          setHighlights(data);
-        } else {
-          console.error("Failed to fetch book highlights.");
-        }
+        const data = await getAllHighlightsByBookId(user, bookId);
+        setHighlights(data);
 
         if (userHighlight && userHighlight.location) {
           setLocation(userHighlight.location);
@@ -127,7 +104,7 @@ const BookReader: React.FC = () => {
             fill: "red",
             "fill-opacity": "0.5",
             "mix-blend-mode": "multiply",
-          }
+          },
         );
       });
 
@@ -279,7 +256,7 @@ const BookReader: React.FC = () => {
               fill: "red",
               "fill-opacity": "0.5",
               "mix-blend-mode": "multiply",
-            }
+            },
           );
           // @ts-ignore: DO NOT REMOVE THIS COMMENT
           // This annotation was added because typescript throws an error
