@@ -197,16 +197,20 @@ const BookReader: React.FC = () => {
 
       // Send the PUT request to regenerate the image
       const putUrl = `http://localhost:8000/book/${bookId}/highlight/${highlightId}`;
+      console.log("Sending PUT request to:", putUrl);
+
       const putResponse = await fetch(putUrl, {
         method: "PUT",
         headers: user.authorizationHeaders(),
       });
 
       if (putResponse.ok) {
-        console.log("Image regenerated successfully!");
+        console.log("PUT request succeeded!");
 
-        // Immediately follow up with a GET request to retrieve the updated highlight
+        // Now, make the GET request to fetch the updated highlight
         const getUrl = `http://localhost:8000/book/${bookId}/highlight/${highlightId}`;
+        console.log("Sending GET request to:", getUrl);
+
         const getResponse = await fetch(getUrl, {
           method: "GET",
           headers: user.authorizationHeaders(),
@@ -215,15 +219,22 @@ const BookReader: React.FC = () => {
         if (getResponse.ok) {
           const updatedHighlight = await getResponse.json();
 
-          // Update highlights and the selected highlight to reflect the new image URL
+          // Append a timestamp to the image URL to force refresh
+          const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
+
+          // Update highlights with the new URL and cache-busting parameter
           setHighlights(
             highlights.map((h) =>
-              h.location === selectedHighlight.location ? updatedHighlight : h
+              h.location === selectedHighlight.location
+                ? { ...h, imgUrl: timestampedUrl }
+                : h
             )
           );
 
-          // Update the selected highlight to reflect the updated data
-          setSelectedHighlight(updatedHighlight);
+          // Update the selected highlight with the new URL as well
+          setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });
+
+          console.log("GET request succeeded with updated highlight data!");
         } else {
           console.error(
             "Failed to fetch the updated highlight data",
@@ -231,7 +242,7 @@ const BookReader: React.FC = () => {
           );
         }
       } else {
-        console.error("Failed to regenerate image:", putResponse);
+        console.error("PUT request failed:", putResponse);
       }
     } catch (error) {
       console.error(
