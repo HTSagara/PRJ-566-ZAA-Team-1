@@ -16,7 +16,11 @@ import Loading from "@/components/Loading";
 import Icon from "react-native-vector-icons/FontAwesome";
 
 import { AuthContext, type User } from "@/utilities/authContext";
-import { Highlight } from "@/utilities/backendService";
+import {
+  Highlight,
+  regenerateHighlightImage,
+  fetchUpdatedHighlight,
+} from "@/utilities/backendService";
 import {
   getAllHighlightsByBookId,
   getBookByBookId,
@@ -48,10 +52,10 @@ const BookReader: React.FC = () => {
   const [saveError, setSaveError] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>("Saving highlight...");
   const [saveErrorMessage, setSaveErrorMessage] = useState<string>(
-    "Error saving highlight.",
+    "Error saving highlight."
   );
   const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(
-    null,
+    null
   );
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -61,7 +65,7 @@ const BookReader: React.FC = () => {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [rendition, setRendition] = useState<Rendition | undefined>(undefined);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
-    null,
+    null
   );
 
   // This useEffect is triggered when the bookReader page is called and it's job is to fetch book content from S3
@@ -108,7 +112,7 @@ const BookReader: React.FC = () => {
             fill: "red",
             "fill-opacity": "0.5",
             "mix-blend-mode": "multiply",
-          },
+          }
         );
       });
 
@@ -176,59 +180,39 @@ const BookReader: React.FC = () => {
 
       setModalVisible(true); // Show loading modal
 
-      // Send the PUT request to regenerate the image
-      const putUrl = `http://localhost:8000/book/${bookId}/highlight/${highlightId}`;
-      console.log("Sending PUT request to:", putUrl);
+      // Call backendService to regenerate the image
+      const putSuccess = await regenerateHighlightImage(
+        user,
+        bookId,
+        highlightId
+      );
+      if (putSuccess) {
+        // Fetch the updated highlight from backendService
+        const updatedHighlight = await fetchUpdatedHighlight(
+          user,
+          bookId,
+          highlightId
+        );
 
-      const putResponse = await fetch(putUrl, {
-        method: "PUT",
-        headers: user.authorizationHeaders(),
-      });
+        // Append a timestamp to the image URL to force refresh
+        const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
 
-      if (putResponse.ok) {
-        console.log("PUT request succeeded!");
+        // Update highlights and selectedHighlight with the new URL
+        setHighlights(
+          highlights.map((h) =>
+            h.location === selectedHighlight.location
+              ? { ...h, imgUrl: timestampedUrl }
+              : h
+          )
+        );
+        setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });
 
-        // Now, make the GET request to fetch the updated highlight
-        const getUrl = `http://localhost:8000/book/${bookId}/highlight/${highlightId}`;
-        console.log("Sending GET request to:", getUrl);
-
-        const getResponse = await fetch(getUrl, {
-          method: "GET",
-          headers: user.authorizationHeaders(),
-        });
-
-        if (getResponse.ok) {
-          const updatedHighlight = await getResponse.json();
-
-          // Append a timestamp to the image URL to force refresh
-          const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
-
-          // Update highlights with the new URL and cache-busting parameter
-          setHighlights(
-            highlights.map((h) =>
-              h.location === selectedHighlight.location
-                ? { ...h, imgUrl: timestampedUrl }
-                : h,
-            ),
-          );
-
-          // Update the selected highlight with the new URL as well
-          setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });
-
-          console.log("GET request succeeded with updated highlight data!");
-        } else {
-          console.error(
-            "Failed to fetch the updated highlight data",
-            getResponse,
-          );
-        }
-      } else {
-        console.error("PUT request failed:", putResponse);
+        console.log("Updated highlight fetched and set with new image URL");
       }
     } catch (error) {
       console.error(
-        "Error in image regeneration or fetching updated highlight:",
-        error,
+        "Error in regenerating image or fetching updated highlight:",
+        error
       );
     } finally {
       setModalVisible(false); // Hide loading modal after completion
@@ -260,7 +244,7 @@ const BookReader: React.FC = () => {
               fill: "red",
               "fill-opacity": "0.5",
               "mix-blend-mode": "multiply",
-            },
+            }
           );
           // @ts-ignore: DO NOT REMOVE THIS COMMENT
           // This annotation was added because typescript throws an error
@@ -382,7 +366,17 @@ const BookReader: React.FC = () => {
           <View style={styles.modalView}>
             {selectedHighlight?.imgUrl ? (
               <>
-                <Text>Generated image:</Text>
+                <View style={styles.imageHeader}>
+                  <Text>Generated image:</Text>
+                  <TouchableOpacity onPress={() => handleRegenerate()}>
+                    <Icon
+                      name="refresh"
+                      size={16}
+                      color="#000000"
+                      style={styles.refreshIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
                 <br />
                 <Image
                   source={{ uri: selectedHighlight.imgUrl }}
@@ -395,9 +389,6 @@ const BookReader: React.FC = () => {
             )}
             <TouchableOpacity onPress={() => setImageModalVisible(false)}>
               <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleRegenerate()}>
-              <Icon name="refresh" size={16} color="#000000" />
             </TouchableOpacity>
           </View>
         </View>
@@ -464,6 +455,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: "blue",
     fontWeight: "bold",
+  },
+  imageHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10, // Space between text and image
+  },
+  refreshIcon: {
+    marginLeft: 8, // Space between the text and icon
   },
 });
 
