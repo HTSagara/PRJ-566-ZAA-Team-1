@@ -48,7 +48,11 @@ const BookReader: React.FC = () => {
   const [saveError, setSaveError] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>("Saving highlight...");
   const [saveErrorMessage, setSaveErrorMessage] = useState<string>(
-
+    "Error saving highlight.",
+  );
+  const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(
+    null,
+  );
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -204,8 +208,8 @@ const BookReader: React.FC = () => {
             highlights.map((h) =>
               h.location === selectedHighlight.location
                 ? { ...h, imgUrl: timestampedUrl }
-                : h
-            )
+                : h,
+            ),
           );
 
           // Update the selected highlight with the new URL as well
@@ -215,7 +219,7 @@ const BookReader: React.FC = () => {
         } else {
           console.error(
             "Failed to fetch the updated highlight data",
-            getResponse
+            getResponse,
           );
         }
       } else {
@@ -224,7 +228,7 @@ const BookReader: React.FC = () => {
     } catch (error) {
       console.error(
         "Error in image regeneration or fetching updated highlight:",
-        error
+        error,
       );
     } finally {
       setModalVisible(false); // Hide loading modal after completion
