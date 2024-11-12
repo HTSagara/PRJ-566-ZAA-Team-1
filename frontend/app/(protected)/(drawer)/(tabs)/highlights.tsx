@@ -160,108 +160,104 @@ export default function ShowBookHighlights() {
     };
 
     return (
-        <div>
-        <div>
-            <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity
-                onPress={() => navigation.navigate("bookDetails", { bookId })}
-                >
-                <Icon name="chevron-left" size={24} color="#000" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Highlights</Text>
-            </View>
-            </View>
-        </div>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.navigate("bookDetails", { bookId })}>
+            <Icon name="chevron-left" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Highlights</Text>
+        </View>
+  
         <FlatList
-            data={highlight}
-            renderItem={({ item }) => (
+          data={highlight}
+          renderItem={({ item }) => (
             <TouchableOpacity
-                onPress={() => {
+              onPress={() => {
                 navigation.navigate("bookReader", {
-                    bookId: bookId,
-                    userHighlight: item,
+                  bookId: bookId,
+                  userHighlight: item,
                 });
-                }}
-                style={styles.cardContainer}
+              }}
+              style={styles.cardContainer}
             >
-                <View style={styles.card}>
+              <View style={styles.card}>
                 {item.imgUrl && (
-                    <Icon name="image" size={24} style={{ marginHorizontal: 10 }} />
+                  <Icon name="image" size={24} style={{ marginHorizontal: 10 }} />
                 )}
                 <Text style={styles.highlightText}>{item.text}</Text>
                 <TouchableOpacity
-                    onPress={() => {
+                  onPress={() => {
                     setModalVisible(true);
-                    setSelectedHighlightId(item.id); // Set selected highlight for deletion
-                    }}
+                    setSelectedHighlightId(item.id);
+                    setSelectedHighlight(item);
+                  }}
                 >
-                    <Entypo
-                    name="dots-three-vertical"
-                    size={24}
-                    style={styles.menuIcon}
-                    />
+                  <Entypo name="dots-three-vertical" size={24} style={styles.menuIcon} />
                 </TouchableOpacity>
-                </View>
+              </View>
             </TouchableOpacity>
-            )}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.cardList}
-            numColumns={2}
+          )}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.cardList}
+          numColumns={2}
         />
-
+  
         {/* Delete Confirmation Modal */}
         <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalVisible}
-            onRequestClose={() => {
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => {
             setModalVisible(!modalVisible);
             setSelectedHighlightId(null);
-            }}
+            setSelectedHighlight(null);
+          }}
         >
-            <View style={styles.modalContainer}>
+          <View style={styles.modalContainer}>
             <View style={styles.modalView}>
-                <TouchableOpacity
+              <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
-                    setModalVisible(!modalVisible);
-                    setSelectedHighlightId(null);
+                  setModalVisible(!modalVisible);
+                  setSelectedHighlightId(null);
+                  setSelectedHighlight(null);
                 }}
-                >
+              >
                 <Ionicons name="close" size={28} color="#000" />
-                </TouchableOpacity>
-                <View style={styles.buttonRow}>
-                <TouchableOpacity style={styles.button} onPress={deleteImageHighlight}>
-                    <Text style={styles.textStyle}>Delete Image highlight</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.button]}
-                    onPress={handleDeleteHighlight} // Delete highlight on press
-                >
-                    <Text style={styles.textStyle}>Delete highlight</Text>
-                </TouchableOpacity>
-                </View>
-                {error && (
-                <Text style={{ color: "red", marginTop: 10 }}>{error}</Text>
+              </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                {selectedHighlight?.imgUrl && (
+                  <TouchableOpacity style={styles.button} onPress={deleteImageHighlight}>
+                    <Text style={styles.textStyle}>Delete Image Highlight</Text>
+                  </TouchableOpacity>
                 )}
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleDeleteHighlight}
+                >
+                  <Text style={styles.textStyle}>Delete Highlight</Text>
+                </TouchableOpacity>
+              </View>
+              {error && (
+                <Text style={{ color: "red", marginTop: 10 }}>{error}</Text>
+              )}
             </View>
-            </View>
+          </View>
         </Modal>
-
+  
         {/* Loading Modal */}
         {loading && (
-            <Modal transparent={true} animationType="fade" visible={loading}>
+          <Modal transparent={true} animationType="fade" visible={loading}>
             <View style={styles.loadingContainer}>
-                <View style={styles.loadingBox}>
+              <View style={styles.loadingBox}>
                 <Loading message="Deleting highlight..." />
-                </View>
+              </View>
             </View>
-            </Modal>
+          </Modal>
         )}
-        </div>
+      </View>
     );
-}
+}  
 
 const styles = StyleSheet.create({
   cardList: {
@@ -315,17 +311,17 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   buttonRow: {
-    flex: 1,
-    marginTop: 15,
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 15,
     width: "100%",
   },
   button: {
     borderRadius: 10,
     padding: 10,
     elevation: 2,
-    marginRight: 15,
+    marginHorizontal: 10,
     backgroundColor: "red",
   },
   textStyle: {
@@ -374,223 +370,3 @@ const styles = StyleSheet.create({
     padding: 10,
   },
 });
-// =======
-
-
-
-//   return (
-//     <div>
-//       <div>
-//         <View style={styles.container}>
-//           <View style={styles.header}>
-//             <TouchableOpacity
-//               onPress={() => navigation.navigate("bookDetails", { bookId })}
-//             >
-//               <Icon name="chevron-left" size={24} color="#000" />
-//             </TouchableOpacity>
-//             <Text style={styles.headerTitle}>Highlights</Text>
-//           </View>
-//         </View>
-//       </div>
-//       <FlatList
-//         data={highlight}
-//         renderItem={({ item }) => (
-//           <TouchableOpacity
-//             onPress={() => {
-//               navigation.navigate("bookReader", {
-//                 bookId: bookId,
-//                 userHighlight: item,
-//               });
-//             }}
-//             style={styles.cardContainer}
-//           >
-//             <View style={styles.card}>
-//               {item.imgUrl && (
-//                 <Icon name="image" size={24} style={{ marginHorizontal: 10 }} />
-//               )}
-//               <Text style={styles.highlightText}>{item.text}</Text>
-//               <TouchableOpacity
-//                 onPress={() => {
-//                   setModalVisible(true);
-//                   setSelectedHighlightId(item.id); // Set selected highlight for deletion
-//                 }}
-//               >
-//                 <Entypo
-//                   name="dots-three-vertical"
-//                   size={24}
-//                   style={styles.menuIcon}
-//                 />
-//               </TouchableOpacity>
-//             </View>
-//           </TouchableOpacity>
-//         )}
-//         keyExtractor={(item) => item.id}
-//         contentContainerStyle={styles.cardList}
-//         numColumns={2}
-//       />
-
-//       {/* Delete Confirmation Modal */}
-//       <Modal
-//         animationType="slide"
-//         transparent={true}
-//         visible={modalVisible}
-//         onRequestClose={() => {
-//           setModalVisible(!modalVisible);
-//           setSelectedHighlightId(null);
-//         }}
-//       >
-//         <View style={styles.modalContainer}>
-//           <View style={styles.modalView}>
-//             <TouchableOpacity
-//               style={styles.closeButton}
-//               onPress={() => {
-//                 setModalVisible(!modalVisible);
-//                 setSelectedHighlightId(null);
-//               }}
-//             >
-//               <Ionicons name="close" size={28} color="#000" />
-//             </TouchableOpacity>
-//             <View style={styles.buttonRow}>
-//               <TouchableOpacity style={styles.button}>
-//                 <Text style={styles.textStyle}>Delete Image highlight</Text>
-//               </TouchableOpacity>
-//               <TouchableOpacity
-//                 style={[styles.button]}
-//                 onPress={handleDeleteHighlight} // Delete highlight on press
-//               >
-//                 <Text style={styles.textStyle}>Delete highlight</Text>
-//               </TouchableOpacity>
-//             </View>
-//             {error && (
-//               <Text style={{ color: "red", marginTop: 10 }}>{error}</Text>
-//             )}
-//           </View>
-//         </View>
-//       </Modal>
-
-//       {/* Loading Modal */}
-//       {loading && (
-//         <Modal transparent={true} animationType="fade" visible={loading}>
-//           <View style={styles.loadingContainer}>
-//             <View style={styles.loadingBox}>
-//               <Loading message="Deleting highlight..." />
-//             </View>
-//           </View>
-//         </Modal>
-//       )}
-//     </div>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   cardList: {
-//     justifyContent: "space-between",
-//     marginBottom: 10,
-//   },
-//   cardContainer: {
-//     flex: 1,
-//     padding: 35,
-//   },
-//   card: {
-//     flex: 1,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     justifyContent: "space-between",
-//     borderWidth: 1,
-//     borderColor: "#ccc",
-//     padding: 10,
-//     borderRadius: 5,
-//     marginHorizontal: 5,
-//     maxWidth: "60%",
-//     backgroundColor: "#d9d9d9",
-//   },
-//   highlightText: {
-//     fontSize: 15,
-//     flex: 1,
-//     marginHorizontal: 10,
-//   },
-//   menuIcon: {
-//     marginLeft: "auto",
-//   },
-//   modalContainer: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     backgroundColor: "rgba(0,0,0,0.5)",
-//   },
-//   modalView: {
-//     width: 350,
-//     backgroundColor: "white",
-//     borderRadius: 20,
-//     padding: 50,
-//     alignItems: "center",
-//     shadowColor: "#000",
-//     shadowOffset: {
-//       width: 0,
-//       height: 2,
-//     },
-//     shadowOpacity: 0.25,
-//     shadowRadius: 4,
-//     elevation: 5,
-//   },
-//   buttonRow: {
-//     flex: 1,
-//     marginTop: 15,
-//     flexDirection: "row",
-//     justifyContent: "space-around",
-//     width: "100%",
-//   },
-//   button: {
-//     borderRadius: 10,
-//     padding: 10,
-//     elevation: 2,
-//     marginRight: 15,
-//     backgroundColor: "red",
-//   },
-//   textStyle: {
-//     color: "white",
-//     fontWeight: "bold",
-//     textAlign: "center",
-//   },
-//   container: {
-//     flex: 1,
-//     padding: 20,
-//   },
-//   header: {
-//     flexDirection: "row",
-//     justifyContent: "center",
-//     alignItems: "center",
-//     paddingVertical: 10,
-//     marginBottom: 10,
-//   },
-//   headerTitle: {
-//     fontSize: 28,
-//     fontWeight: "bold",
-//     textAlign: "center",
-//     flex: 1,
-//   },
-//   closeButton: {
-//     position: "absolute",
-//     top: 10,
-//     right: 10,
-//     padding: 5,
-//   },
-
-//   // Loading modal background styling
-//   loadingContainer: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     backgroundColor: "rgba(0,0,0,0.5)",
-//   },
-//   loadingBox: {
-//     width: 200,
-//     height: 100,
-//     backgroundColor: "white",
-//     borderRadius: 10,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     padding: 10,
-//   },
-// });
-// >>>>>>> origin/main

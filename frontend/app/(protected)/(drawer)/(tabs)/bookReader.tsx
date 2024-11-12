@@ -17,11 +17,15 @@ import Loading from "@/components/Loading";
 import { AuthContext, type User } from "@/utilities/auth";
 import { Highlight } from "./highlights";
 
+import Icon from "react-native-vector-icons/FontAwesome";
+
 interface Selection {
+  id?: string;
   text: string;
   location: string;
   imgUrl?: string;
 }
+
 
 const BookReader: React.FC = () => {
   const user = useContext(AuthContext) as User;
@@ -51,6 +55,9 @@ const BookReader: React.FC = () => {
   const [rendition, setRendition] = useState<Rendition | undefined>(undefined);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
+  const imageURL = selectedHighlight?.imgUrl;
+  const highlightId = imageURL?.split("/").pop()?.replace(".png", "");
+  
   // This useEffect is triggered when the bookReader page is called and it's job is to fetch book content from S3
   useEffect(() => {
     if (!bookId) {
@@ -218,6 +225,41 @@ const BookReader: React.FC = () => {
     setContextMenu({ visible: false, x: 0, y: 0 });
   };
 
+  // Function to handle delete image highlight
+    const deleteImageHighlight = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(
+          `http://localhost:8000/book/${bookId}/highlight/${highlightId}/image`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${user.accessToken}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          setHighlights((prevHighlights) =>
+            prevHighlights.map((item) =>
+              item.id === highlightId ? { ...item, imgUrl: undefined } : item
+            )
+          );
+          setModalVisible(false);
+        } else {
+          const errorData = await response.json();
+          setError(`Error removing image: ${errorData.message}`);
+        }
+      } catch (err) {
+        console.log(`Exception while calling the delete API: ${err}.`);
+        setError("Error removing image.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
   const handleRenderImage = async () => {
     if (rendition && selection) {
       setSaveMessage("Visualizing highlight...");
@@ -313,8 +355,17 @@ const BookReader: React.FC = () => {
           <View style={styles.modalView}>
             {selectedHighlight?.imgUrl ? (
               <>
-                <Text>Generated image:</Text>
-                <br/>
+                <View style={styles.imageHeader}>
+                  <Text>Generated image:</Text>
+                  <TouchableOpacity onPress={deleteImageHighlight}>
+                    <Icon
+                      name="trash"
+                      size={24}
+                      style={{ color: "gray", marginHorizontal: 10 }}
+                    />
+                  </TouchableOpacity>
+
+                </View>
                 <Image
                   source={{ uri: selectedHighlight.imgUrl }}
                   style={{ width: 325, height: 325 }}
@@ -382,6 +433,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 50,
     alignItems: "center",
+  },
+  imageHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  trashIcon: {
+    width: 24,
+    height: 24,
+    marginLeft: 10,
   },
   closeButtonText: {
     marginTop: 20,
