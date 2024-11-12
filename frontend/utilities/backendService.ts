@@ -143,7 +143,7 @@ export async function getAllHighlightsByBookId(user: User, bookId: string) {
 export async function deleteHighlight(
   user: User,
   bookId: string,
-  highlightId: string,
+  highlightId: string
 ) {
   const response = await fetch(
     backendURL + `/book/${bookId}/highlight/${highlightId}`,
@@ -153,7 +153,7 @@ export async function deleteHighlight(
         "Content-Type": "application/json",
         Authorization: `Bearer ${user.accessToken}`,
       },
-    },
+    }
   );
 
   // handle the response
@@ -162,5 +162,54 @@ export async function deleteHighlight(
   } else {
     const errorData = await response.json();
     throw new Error(`Failed to delete highlight: ${errorData.message}`);
+  }
+}
+
+// Regenerate the highlight image with a PUT request
+export async function regenerateHighlightImage(
+  user: User,
+  bookId: string,
+  highlightId: string
+) {
+  const url = `${backendURL}/book/${bookId}/highlight/${highlightId}`;
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${user.accessToken}`,
+    },
+  });
+
+  if (response.ok) {
+    console.log("Image regeneration succeeded");
+    return true;
+  } else {
+    const error = await response.json();
+    console.error("Image regeneration failed:", error);
+    throw new Error("Failed to regenerate highlight image.");
+  }
+}
+
+// Fetch the updated highlight data with a GET request
+export async function fetchUpdatedHighlight(
+  user: User,
+  bookId: string,
+  highlightId: string
+) {
+  const url = `${backendURL}/book/${bookId}/highlight/${highlightId}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${user.accessToken}`,
+    },
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    console.log("Fetched updated highlight data successfully");
+    return data;
+  } else {
+    const error = await response.json();
+    console.error("Failed to fetch updated highlight data:", error);
+    throw new Error("Failed to fetch updated highlight data.");
   }
 }
