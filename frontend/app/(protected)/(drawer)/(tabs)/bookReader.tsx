@@ -403,20 +403,6 @@ const BookReader: React.FC = () => {
               value={String(fontSize)}
               onChangeText={(value) => setFontSize(parseFloat(value) || 16)}
             />
-            <Text>Line Height</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              value={String(lineHeight)}
-              onChangeText={(value) => setLineHeight(parseFloat(value) || 1.5)}
-            />
-            <Text>Text Margin</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              value={String(textMargin)}
-              onChangeText={(value) => setTextMargin(parseFloat(value) || 10)}
-            />
             <TouchableOpacity onPress={applySettings}>
               <Text style={styles.closeButtonText}>Save</Text>
             </TouchableOpacity>
