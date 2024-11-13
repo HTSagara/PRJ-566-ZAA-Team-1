@@ -7,6 +7,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Switch,
+  TextInput,
 } from "react-native";
 import { ReactReader } from "react-reader";
 import { useRoute } from "@react-navigation/native";
@@ -68,7 +70,14 @@ const BookReader: React.FC = () => {
     null
   );
 
-  // This useEffect is triggered when the bookReader page is called and it's job is to fetch book content from S3
+  // E-Reader settings state
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [fontSize, setFontSize] = useState(16);
+  const [lineHeight, setLineHeight] = useState(1.5);
+  const [textMargin, setTextMargin] = useState(10);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Fetch book data
   useEffect(() => {
     if (!bookId) {
       setError("No bookId provided");
@@ -98,7 +107,7 @@ const BookReader: React.FC = () => {
     fetchBook();
   }, [bookId, user]);
 
-  // This useEffect is triggered when user creates a Highlight while in the readMode
+  // Adding highlights
   useEffect(() => {
     if (highlights && rendition) {
       highlights.forEach((highlight) => {
@@ -178,26 +187,22 @@ const BookReader: React.FC = () => {
         return;
       }
 
-      setModalVisible(true); // Show loading modal
+      setModalVisible(true);
 
-      // Call backendService to regenerate the image
       const putSuccess = await regenerateHighlightImage(
         user,
         bookId,
         highlightId
       );
       if (putSuccess) {
-        // Fetch the updated highlight from backendService
         const updatedHighlight = await fetchUpdatedHighlight(
           user,
           bookId,
           highlightId
         );
 
-        // Append a timestamp to the image URL to force refresh
         const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
 
-        // Update highlights and selectedHighlight with the new URL
         setHighlights(
           highlights.map((h) =>
             h.location === selectedHighlight.location
@@ -206,8 +211,6 @@ const BookReader: React.FC = () => {
           )
         );
         setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });
-
-        console.log("Updated highlight fetched and set with new image URL");
       }
     } catch (error) {
       console.error(
@@ -215,7 +218,7 @@ const BookReader: React.FC = () => {
         error
       );
     } finally {
-      setModalVisible(false); // Hide loading modal after completion
+      setModalVisible(false);
     }
   };
 
@@ -246,11 +249,6 @@ const BookReader: React.FC = () => {
               "mix-blend-mode": "multiply",
             }
           );
-          // @ts-ignore: DO NOT REMOVE THIS COMMENT
-          // This annotation was added because typescript throws an error
-          //   for getContents()[0]
-          // The return type for getContents() is outdated and actually returns
-          //   Contents[] instead of Contents
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
           setSaveError(false);
         } else {
@@ -301,7 +299,36 @@ const BookReader: React.FC = () => {
     setImageModalVisible(true);
   };
 
-  // Show loading indicator while fetching
+  const applySettings = () => {
+    if (rendition) {
+        // Apply font size directly
+        rendition.themes.fontSize(`${fontSize}px`);
+
+        // Register and apply the custom theme for dark/light mode and font color
+        rendition.themes.register("custom", {
+            "html, body": {
+                color: isDarkMode ? "#FFFFFF" : "#000000",
+                background: isDarkMode ? "#000000" : "#FFFFFF",
+            },
+        });
+        rendition.themes.select("custom");
+
+        // Apply line height and text margin directly to each section's content
+        rendition.on("rendered", (section: { document: any; }) => {
+            const content = section.document;
+            if (content) {
+                const body = content.querySelector("body");
+                if (body) {
+                    body.style.lineHeight = `${lineHeight}`;
+                    body.style.padding = `${textMargin}px`;
+                }
+            }
+        });
+    }
+
+    setSettingsModalVisible(false);
+};
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -333,6 +360,13 @@ const BookReader: React.FC = () => {
         <Text>Book URL is not available.</Text>
       )}
 
+      <TouchableOpacity
+        style={styles.settingsButton}
+        onPress={() => setSettingsModalVisible(true)}
+      >
+        <Icon name="cog" size={24} color="white" />
+      </TouchableOpacity>
+
       {contextMenu.visible && (
         <View
           style={[
@@ -359,6 +393,47 @@ const BookReader: React.FC = () => {
       <Modal
         animationType="slide"
         transparent={true}
+        visible={settingsModalVisible}
+        onRequestClose={() => setSettingsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            <Text>Dark Mode</Text>
+            <Switch
+              value={isDarkMode}
+              onValueChange={(value) => setIsDarkMode(value)}
+            />
+            <Text>Font Size</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={String(fontSize)}
+              onChangeText={(value) => setFontSize(parseFloat(value) || 16)}
+            />
+            <Text>Line Height</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={String(lineHeight)}
+              onChangeText={(value) => setLineHeight(parseFloat(value) || 1.5)}
+            />
+            <Text>Text Margin</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={String(textMargin)}
+              onChangeText={(value) => setTextMargin(parseFloat(value) || 10)}
+            />
+            <TouchableOpacity onPress={applySettings}>
+              <Text style={styles.closeButtonText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
         visible={imageModalVisible}
         onRequestClose={() => setImageModalVisible(false)}
       >
@@ -377,7 +452,6 @@ const BookReader: React.FC = () => {
                     />
                   </TouchableOpacity>
                 </View>
-                <br />
                 <Image
                   source={{ uri: selectedHighlight.imgUrl }}
                   style={{ width: 325, height: 325 }}
@@ -435,6 +509,15 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     padding: 5,
   },
+  settingsButton: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+    backgroundColor: "#007BFF",
+    padding: 10,
+    borderRadius: 25,
+    zIndex: 1,
+  },
   contextMenuItem: {
     padding: 10,
   },
@@ -451,6 +534,15 @@ const styles = StyleSheet.create({
     padding: 50,
     alignItems: "center",
   },
+  input: {
+    height: 40,
+    borderColor: "gray",
+    borderWidth: 1,
+    width: "80%",
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
   closeButtonText: {
     marginTop: 20,
     color: "blue",
@@ -459,10 +551,10 @@ const styles = StyleSheet.create({
   imageHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10, // Space between text and image
+    marginBottom: 10,
   },
   refreshIcon: {
-    marginLeft: 8, // Space between the text and icon
+    marginLeft: 8,
   },
 });
 
