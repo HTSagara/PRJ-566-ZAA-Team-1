@@ -249,6 +249,11 @@ const BookReader: React.FC = () => {
               "mix-blend-mode": "multiply",
             }
           );
+          // @ts-ignore: DO NOT REMOVE THIS COMMENT
+          // This annotation was added because typescript throws an error
+          //   for getContents()[0]
+          // The return type for getContents() is outdated and actually returns
+          //   Contents[] instead of Contents
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
           setSaveError(false);
         } else {
@@ -312,18 +317,6 @@ const BookReader: React.FC = () => {
             },
         });
         rendition.themes.select("custom");
-
-        // Apply line height and text margin directly to each section's content
-        rendition.on("rendered", (section: { document: any; }) => {
-            const content = section.document;
-            if (content) {
-                const body = content.querySelector("body");
-                if (body) {
-                    body.style.lineHeight = `${lineHeight}`;
-                    body.style.padding = `${textMargin}px`;
-                }
-            }
-        });
     }
 
     setSettingsModalVisible(false);
