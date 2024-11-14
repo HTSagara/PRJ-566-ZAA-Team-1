@@ -73,8 +73,6 @@ const BookReader: React.FC = () => {
   // E-Reader settings state
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [fontSize, setFontSize] = useState(16);
-  const [lineHeight, setLineHeight] = useState(1.5);
-  const [textMargin, setTextMargin] = useState(10);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Fetch book data
