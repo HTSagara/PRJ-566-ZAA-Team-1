@@ -489,34 +489,6 @@ const BookReader: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Saving highlight spinner */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(!modalVisible)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalView}>
-            {!saveError ? (
-              <Loading message={saveMessage} />
-            ) : (
-              <>
-                <Text>{saveErrorMessage}</Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setModalVisible(false);
-                    setSaveError(false);
-                  }}
-                >
-                  <Text style={styles.closeButtonText}>Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-
       {/* Model for custom text prompt */}
       <Modal
         animationType="slide"
@@ -543,6 +515,34 @@ const BookReader: React.FC = () => {
                 <Text style={styles.buttonText}>Regenerate</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Saving highlight spinner */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(!modalVisible)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            {!saveError ? (
+              <Loading message={saveMessage} />
+            ) : (
+              <>
+                <Text>{saveErrorMessage}</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setModalVisible(false);
+                    setSaveError(false);
+                  }}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </Modal>
