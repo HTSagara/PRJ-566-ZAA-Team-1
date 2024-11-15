@@ -226,39 +226,40 @@ const BookReader: React.FC = () => {
   };
 
   // Function to handle delete image highlight
-    const deleteImageHighlight = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(
-          `http://localhost:8000/book/${bookId}/highlight/${highlightId}/image`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${user.accessToken}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          setHighlights((prevHighlights) =>
-            prevHighlights.map((item) =>
-              item.id === highlightId ? { ...item, imgUrl: undefined } : item
-            )
-          );
-          setModalVisible(false);
-        } else {
-          const errorData = await response.json();
-          setError(`Error removing image: ${errorData.message}`);
+  const deleteImageHighlight = async () => {
+    setLoading(true);
+    setError(null);
+  
+    try {
+      const response = await fetch(
+        `http://localhost:8000/book/${bookId}/highlight/${highlightId}/image`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+          },
         }
-      } catch (err) {
-        console.log(`Exception while calling the delete API: ${err}.`);
-        setError("Error removing image.");
-      } finally {
-        setLoading(false);
+      );
+  
+      if (response.ok) {
+        setHighlights((prevHighlights) =>
+          prevHighlights.map((item) =>
+            item.id === highlightId ? { ...item, imgUrl: undefined } : item
+          )
+        );
+        setImageModalVisible(false); // Close the modal
+      } else {
+        const errorData = await response.json();
+        setError(`Error removing image: ${errorData.message}`);
       }
-    };
+    } catch (err) {
+      console.log(`Exception while calling the delete API: ${err}.`);
+      setError("Error removing image.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
 
   const handleRenderImage = async () => {
     if (rendition && selection) {
