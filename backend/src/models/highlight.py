@@ -76,7 +76,7 @@ class Highlight(BaseModel):
         collection = get_mongodb_collection(self.owner_id)
         result = collection.find_one({"_id": self.book_id}, {"highlights": 1, "_id": 0})
 
-        if not result:
+        if result is None:
             raise HTTPException(status_code=404, detail="Book not found")
 
         return result.get("highlights", [])

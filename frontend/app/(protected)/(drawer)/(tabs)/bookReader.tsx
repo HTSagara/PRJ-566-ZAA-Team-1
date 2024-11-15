@@ -7,17 +7,23 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Switch,
+  TextInput,
 } from "react-native";
 import { ReactReader } from "react-reader";
 import { useRoute } from "@react-navigation/native";
 import type { Rendition, Contents } from "epubjs";
 import Section from "epubjs/types/section";
-import Loading from "@/components/Loading";
-
-import { AuthContext, type User } from "@/utilities/auth";
-import { Highlight } from "./highlights";
-
 import Icon from "react-native-vector-icons/FontAwesome";
+import { AuthContext, type User } from "@/utilities/authContext";
+import {
+  Highlight,
+  regenerateHighlightImage,
+  fetchUpdatedHighlight,
+  getAllHighlightsByBookId,
+  getBookByBookId,
+} from "@/utilities/backendService";
+import Loading from "@/components/Loading";
 
 interface Selection {
   id?: string;
@@ -26,13 +32,15 @@ interface Selection {
   imgUrl?: string;
 }
 
-
 const BookReader: React.FC = () => {
   const user = useContext(AuthContext) as User;
   const ctxMenuRef = useRef<any>(null);
 
   const route = useRoute();
-  const { bookId, userHighlight } = route.params as { bookId: string, userHighlight: Highlight };
+  const { bookId, userHighlight } = route.params as {
+    bookId: string;
+    userHighlight: Highlight;
+  };
 
   const [location, setLocation] = useState<string | number>(0);
   const [bookUrl, setBookUrl] = useState<string | null>(null);
@@ -43,9 +51,12 @@ const BookReader: React.FC = () => {
   const [imageModalVisible, setImageModalVisible] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>("Saving highlight...");
-  const [saveErrorMessage, setSaveErrorMessage] = useState<string>("Error saving highlight.");
-  const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(null);
-
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string>(
+    "Error saving highlight."
+  );
+  const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(
+    null
+  );
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -53,12 +64,16 @@ const BookReader: React.FC = () => {
   }>({ visible: false, x: 0, y: 0 });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [rendition, setRendition] = useState<Rendition | undefined>(undefined);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
-
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
+    null
+  );
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [fontSize, setFontSize] = useState(16);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const imageURL = selectedHighlight?.imgUrl;
   const highlightId = imageURL?.split("/").pop()?.replace(".png", "");
-  
-  // This useEffect is triggered when the bookReader page is called and it's job is to fetch book content from S3
+
+  // Fetch book data
   useEffect(() => {
     if (!bookId) {
       setError("No bookId provided");
@@ -68,38 +83,15 @@ const BookReader: React.FC = () => {
 
     const fetchBook = async () => {
       try {
-        let response = await fetch(`http://localhost:8000/book/${bookId}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
-        });
+        const response = await getBookByBookId(user, bookId);
+        setBookUrl(response);
 
-        if (response.ok) {
-          const data = await response.json();
-          setBookUrl(data.url);
-        } else {
-          console.error("Error fetching book:", response.statusText);
-          setError("Failed to fetch book.");
+        const data = await getAllHighlightsByBookId(user, bookId);
+        setHighlights(data);
+
+        if (userHighlight && userHighlight.location) {
+          setLocation(userHighlight.location);
         }
-
-        const highlightsUrl = `http://localhost:8000/book/${bookId}/highlights`;
-        response = await fetch(highlightsUrl, {
-          method: "GET",
-          headers: user.authorizationHeaders(),
-        });
-
-        if (response.status === 200) {
-          const data = await response.json();
-          setHighlights(data);
-        } else {
-          console.error("Failed to fetch book highlights.");
-        }
-
-        if (userHighlight && userHighlight.location){
-          setLocation(userHighlight.location)
-        }
-
       } catch (error) {
         console.error("Error fetching book:", error);
         setError("Error fetching book.");
@@ -111,7 +103,7 @@ const BookReader: React.FC = () => {
     fetchBook();
   }, [bookId, user]);
 
-  // This useEffect is triggered when user creates a Highlight while in the readMode
+  // Adding highlights
   useEffect(() => {
     if (highlights && rendition) {
       highlights.forEach((highlight) => {
@@ -179,6 +171,53 @@ const BookReader: React.FC = () => {
     }
   }, [setSelection, rendition, highlights]);
 
+  const handleRegenerate = async () => {
+    if (!selectedHighlight || !selectedHighlight.imgUrl) return;
+
+    try {
+      const imgUrl = selectedHighlight.imgUrl;
+      const highlightId = imgUrl.split("/").pop()?.replace(".png", "");
+
+      if (!highlightId) {
+        console.error("Unable to extract highlight ID from imgUrl:", imgUrl);
+        return;
+      }
+
+      setModalVisible(true);
+
+      const putSuccess = await regenerateHighlightImage(
+        user,
+        bookId,
+        highlightId
+      );
+      if (putSuccess) {
+        const updatedHighlight = await fetchUpdatedHighlight(
+          user,
+          bookId,
+          highlightId
+        );
+
+        const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
+
+        setHighlights(
+          highlights.map((h) =>
+            h.location === selectedHighlight.location
+              ? { ...h, imgUrl: timestampedUrl }
+              : h
+          )
+        );
+        setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });
+      }
+    } catch (error) {
+      console.error(
+        "Error in regenerating image or fetching updated highlight:",
+        error
+      );
+    } finally {
+      setModalVisible(false);
+    }
+  };
+
   const handleHighlight = async () => {
     if (rendition && selection) {
       setSaveMessage("Saving highlight...");
@@ -207,9 +246,9 @@ const BookReader: React.FC = () => {
             }
           );
           // @ts-ignore: DO NOT REMOVE THIS COMMENT
-          // This annotation was added because typescript throws an error 
+          // This annotation was added because typescript throws an error
           //   for getContents()[0]
-          // The return type for getContents() is outdated and actually returns 
+          // The return type for getContents() is outdated and actually returns
           //   Contents[] instead of Contents
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
           setSaveError(false);
@@ -297,7 +336,24 @@ const BookReader: React.FC = () => {
     setImageModalVisible(true);
   };
 
-  // Show loading indicator while fetching
+  const applySettings = () => {
+    if (rendition) {
+        // Apply font size directly
+        rendition.themes.fontSize(`${fontSize}px`);
+
+        // Register and apply the custom theme for dark/light mode and font color
+        rendition.themes.register("custom", {
+            "html, body": {
+                color: isDarkMode ? "#FFFFFF" : "#000000",
+                background: isDarkMode ? "#000000" : "#FFFFFF",
+            },
+        });
+        rendition.themes.select("custom");
+    }
+
+    setSettingsModalVisible(false);
+};
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -329,6 +385,13 @@ const BookReader: React.FC = () => {
         <Text>Book URL is not available.</Text>
       )}
 
+      <TouchableOpacity
+        style={styles.settingsButton}
+        onPress={() => setSettingsModalVisible(true)}
+      >
+        <Icon name="cog" size={24} color="white" />
+      </TouchableOpacity>
+
       {contextMenu.visible && (
         <View
           style={[
@@ -337,14 +400,47 @@ const BookReader: React.FC = () => {
           ]}
           ref={ctxMenuRef}
         >
-          <TouchableOpacity style={styles.contextMenuItem} onPress={handleHighlight}>
+          <TouchableOpacity
+            style={styles.contextMenuItem}
+            onPress={handleHighlight}
+          >
             <Text>Highlight</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.contextMenuItem} onPress={handleRenderImage}>
+          <TouchableOpacity
+            style={styles.contextMenuItem}
+            onPress={handleRenderImage}
+          >
             <Text>Visualize</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={settingsModalVisible}
+        onRequestClose={() => setSettingsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            <Text>Dark Mode</Text>
+            <Switch
+              value={isDarkMode}
+              onValueChange={(value) => setIsDarkMode(value)}
+            />
+            <Text>Font Size</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={String(fontSize)}
+              onChangeText={(value) => setFontSize(parseFloat(value) || 16)}
+            />
+            <TouchableOpacity onPress={applySettings}>
+              <Text style={styles.closeButtonText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         animationType="slide"
@@ -366,6 +462,14 @@ const BookReader: React.FC = () => {
                     />
                   </TouchableOpacity>
 
+                  <TouchableOpacity onPress={() => handleRegenerate()}>
+                    <Icon
+                      name="refresh"
+                      size={16}
+                      color="#000000"
+                      style={styles.refreshIcon}
+                    />
+                  </TouchableOpacity>
                 </View>
                 <Image
                   source={{ uri: selectedHighlight.imgUrl }}
@@ -396,7 +500,12 @@ const BookReader: React.FC = () => {
             ) : (
               <>
                 <Text>{saveErrorMessage}</Text>
-                <TouchableOpacity onPress={() => { setModalVisible(false); setSaveError(false); }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setModalVisible(false);
+                    setSaveError(false);
+                  }}
+                >
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
               </>
@@ -419,6 +528,15 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     padding: 5,
   },
+  settingsButton: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+    backgroundColor: "#007BFF",
+    padding: 10,
+    borderRadius: 25,
+    zIndex: 1,
+  },
   contextMenuItem: {
     padding: 10,
   },
@@ -440,15 +558,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  trashIcon: {
-    width: 24,
-    height: 24,
-    marginLeft: 10,
+  input: {
+    height: 40,
+    borderColor: "gray",
+    borderWidth: 1,
+    width: "80%",
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    borderRadius: 5,
   },
   closeButtonText: {
     marginTop: 20,
     color: "blue",
     fontWeight: "bold",
+  },
+  refreshIcon: {
+    marginLeft: 8,
+  },
+  trashIcon: {
+    width: 24,
+    height: 24,
+    marginLeft: 10,
   },
 });
 

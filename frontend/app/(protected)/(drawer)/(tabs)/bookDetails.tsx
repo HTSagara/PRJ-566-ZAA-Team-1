@@ -11,14 +11,19 @@ import {
   Modal,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { AuthContext, User, getUser } from "@/utilities/auth";
+import { AuthContext, User, getUser } from "@/utilities/authContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { router } from "expo-router";
-import { BookContext, Book } from "@/utilities/book";
+import { BookContext } from "@/utilities/bookContext";
+import { Book } from "@/utilities/backendService";
 import Loading from "@/components/Loading";
+import {
+  deleteUserSelectedBook,
+  getBookMetaData,
+} from "@/utilities/backendService";
 
 export default function BookDetailsScreen() {
   const user = useContext(AuthContext) as User;
@@ -48,22 +53,8 @@ export default function BookDetailsScreen() {
           return;
         }
 
-        const response = await fetch(
-          `http://localhost:8000/book/info/${bookId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${user.accessToken}`,
-            },
-          },
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setBook(data);
-        } else {
-          Alert.alert("Error", "Failed to fetch book details");
-        }
+        const data = await getBookMetaData(user, bookId);
+        setBook(data);
       } catch (error) {
         Alert.alert("Error", "An error occurred while fetching book details.");
       } finally {
@@ -149,25 +140,15 @@ export default function BookDetailsScreen() {
     setDeletingBook(true);
 
     try {
-      const response = await fetch(backendURL + `/book/${bookId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
-      });
+      const response = await deleteUserSelectedBook(user, bookId);
 
-      if (response.ok) {
-        const data = await response.json();
-        console.debug(data.message);
-
+      if (response) {
         setBooks((books: Book[]) => books.filter((book) => book.id !== bookId));
         setDeletingBook(false);
         setModelVisible(false);
 
         router.navigate("./library");
       } else {
-        const error = await response.json();
-        console.log(`Exception while deleting book: ${error}.`);
         setDeletingBook(false);
         setDeleteError(true);
       }

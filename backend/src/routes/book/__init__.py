@@ -1,6 +1,6 @@
 import os
 import boto3
-from fastapi import APIRouter, HTTPException, UploadFile, Form, Request, status
+from fastapi import APIRouter, HTTPException, UploadFile, Form, Request, status, Response
 from fastapi.responses import JSONResponse
 from io import BytesIO
 from botocore.exceptions import NoCredentialsError
@@ -76,7 +76,7 @@ async def retrieve_books(request: Request):
     books = list(collection.find({}))  # Fetch all books for the user
 
     if not books:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No books found for this user")
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     # Rename '_id' to 'id' in the response for each book
     for book in books:

@@ -9,7 +9,7 @@ import {
 import { useState, useEffect } from "react";
 import { Redirect } from "expo-router";
 
-import { Auth, User, getUser } from "@/utilities/auth";
+import { Auth, User, getUser } from "@/utilities/authContext";
 import Loading from "@/components/Loading";
 
 export default function LandingPage() {
