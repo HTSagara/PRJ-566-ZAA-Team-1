@@ -1,6 +1,6 @@
 import os
 import boto3
-from fastapi import APIRouter, HTTPException, Request, status, Response
+from fastapi import APIRouter, HTTPException, Request, status, Response, Body
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -83,7 +83,7 @@ async def delete_highlight(request: Request, book_id: str, highlightid: str):
 
 
 @router.put("/highlight/{highlight_id}", tags=["highlight"])
-async def regenerate_highlight_image(request: Request, book_id: str, highlight_id: str):
+async def regenerate_highlight_image(request: Request, book_id: str, highlight_id: str, new_text: str = Body(None)):
     owner_id = request.state.user["id"]
     
     # Query the MongoDB for the book document and find the highlight by ID
@@ -99,8 +99,8 @@ async def regenerate_highlight_image(request: Request, book_id: str, highlight_i
     if not highlight_data:
         raise HTTPException(status_code=404, detail="Highlight not found")
 
-    # Retrieve the highlight's text for the prompt
-    prompt = highlight_data.get("text")
+    # Use the provided new_text if present, otherwise fall back to the existing highlight text
+    prompt = new_text if new_text else highlight_data.get("text")
     if not prompt:
         raise HTTPException(status_code=500, detail="Highlight text is missing")
 

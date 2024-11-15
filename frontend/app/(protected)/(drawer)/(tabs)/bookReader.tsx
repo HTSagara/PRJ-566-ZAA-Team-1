@@ -16,6 +16,8 @@ import type { Rendition, Contents } from "epubjs";
 import Section from "epubjs/types/section";
 import Loading from "@/components/Loading";
 import Icon from "react-native-vector-icons/FontAwesome";
+import Feather from "react-native-vector-icons/Feather";
+import { createCustomImage, createUserHighlight, Selection } from "@/utilities/backendService";
 
 import { AuthContext, type User } from "@/utilities/authContext";
 import {
@@ -28,11 +30,6 @@ import {
   getBookByBookId,
 } from "@/utilities/backendService";
 
-interface Selection {
-  text: string;
-  location: string;
-  imgUrl?: string;
-}
 
 const BookReader: React.FC = () => {
   const user = useContext(AuthContext) as User;
@@ -50,6 +47,7 @@ const BookReader: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [custompromptModelVisible, setCustomPromptModelVisible] = useState<boolean>(false);
   const [imageModalVisible, setImageModalVisible] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>("Saving highlight...");
@@ -59,6 +57,7 @@ const BookReader: React.FC = () => {
   const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(
     null
   );
+  const [inputText, setInputText] = useState<string>();
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -226,14 +225,9 @@ const BookReader: React.FC = () => {
       setModalVisible(true);
 
       try {
-        const url = `http://localhost:8000/book/${bookId}/highlight`;
-        const response = await fetch(url, {
-          method: "POST",
-          body: JSON.stringify(selection),
-          headers: user.authorizationHeaders(),
-        });
+        const response = await createUserHighlight(user, bookId, selection)
 
-        if (response.status === 200) {
+        if (response) {
           setModalVisible(false);
           rendition.annotations.add(
             "highlight",
@@ -304,21 +298,63 @@ const BookReader: React.FC = () => {
 
   const applySettings = () => {
     if (rendition) {
-        // Apply font size directly
-        rendition.themes.fontSize(`${fontSize}px`);
+      // Apply font size directly
+      rendition.themes.fontSize(`${fontSize}px`);
 
-        // Register and apply the custom theme for dark/light mode and font color
-        rendition.themes.register("custom", {
-            "html, body": {
-                color: isDarkMode ? "#FFFFFF" : "#000000",
-                background: isDarkMode ? "#000000" : "#FFFFFF",
-            },
-        });
-        rendition.themes.select("custom");
+      // Register and apply the custom theme for dark/light mode and font color
+      rendition.themes.register("custom", {
+        "html, body": {
+          color: isDarkMode ? "#FFFFFF" : "#000000",
+          background: isDarkMode ? "#000000" : "#FFFFFF",
+        },
+      });
+      rendition.themes.select("custom");
     }
 
     setSettingsModalVisible(false);
-};
+  };
+
+  //handle edit icon for custom text image generation
+  const handleCustomImagePrompt = async () => {
+    setSaveMessage("Visualizing highlight...");
+    setModalVisible(true);
+
+    if(inputText)
+    {
+      try
+      {
+        const imgUrl = selectedHighlight?.imgUrl;
+        const highlightId = imgUrl?.split("/").pop()?.replace(".png", "") || '';
+
+        const response = await createCustomImage(user, bookId, highlightId, inputText);
+
+        if(response)
+        {const updatedHighlight = await fetchUpdatedHighlight(
+          user,
+          bookId,
+          highlightId
+        );
+
+        const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
+
+        setHighlights(
+          highlights.map((h) =>
+            h.location === selectedHighlight?.location
+              ? { ...h, imgUrl: timestampedUrl }
+              : h
+          )
+        );
+        setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });}
+      }catch (error) {
+        console.error(
+          "Error in regenerating image or fetching updated highlight:",
+          error
+        );
+      } finally {
+        setModalVisible(false);
+      }
+    }
+  }
 
   if (loading) {
     return (
@@ -415,23 +451,31 @@ const BookReader: React.FC = () => {
         onRequestClose={() => setImageModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalView}>
+          <View style={styles.imageModalView}>
             {selectedHighlight?.imgUrl ? (
               <>
                 <View style={styles.imageHeader}>
-                  <Text>Generated image:</Text>
+                  <Text style={{ fontSize: 20 }}>Generated image:</Text>
                   <TouchableOpacity onPress={() => handleRegenerate()}>
                     <Icon
                       name="refresh"
-                      size={16}
+                      size={19}
                       color="#000000"
                       style={styles.refreshIcon}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setCustomPromptModelVisible(true)}>
+                    <Feather
+                      name="edit"
+                      size={19}
+                      color="#000000"
+                      style={styles.editTextIcon}
                     />
                   </TouchableOpacity>
                 </View>
                 <Image
                   source={{ uri: selectedHighlight.imgUrl }}
-                  style={{ width: 325, height: 325 }}
+                  style={{ width: 425, height: 425 }}
                   resizeMode="contain"
                 />
               </>
@@ -445,6 +489,7 @@ const BookReader: React.FC = () => {
         </View>
       </Modal>
 
+      {/* Saving highlight spinner */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -468,6 +513,36 @@ const BookReader: React.FC = () => {
                 </TouchableOpacity>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Model for custom text prompt */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={custompromptModelVisible}
+        onRequestClose={() => setCustomPromptModelVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.imageModalView}>
+            <Text style={styles.title}>Customize prompt</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder={selectedHighlight?.text}
+              onChangeText={setInputText}
+              multiline
+            />
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.button} onPress={() =>
+                setCustomPromptModelVisible(false)
+              }>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.button} onPress={() => { handleCustomImagePrompt() }}>
+                <Text style={styles.buttonText}>Regenerate</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -504,6 +579,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.5)",
   },
+  imageModalView: {
+    width: 550,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 50,
+    alignItems: "center",
+  },
   modalView: {
     width: 350,
     backgroundColor: "white",
@@ -524,6 +606,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: "blue",
     fontWeight: "bold",
+    fontSize: 20
   },
   imageHeader: {
     flexDirection: "row",
@@ -532,6 +615,44 @@ const styles = StyleSheet.create({
   },
   refreshIcon: {
     marginLeft: 8,
+    marginTop: 5
+  },
+  editTextIcon: {
+    marginLeft: 15,
+    marginTop: 5
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  textInput: {
+    width: '100%',
+    height: 150,
+    borderColor: 'black',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 20,
+    textAlignVertical: 'top',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  button: {
+    flex: 1,
+    backgroundColor: 'blue',
+    padding: 10,
+    marginHorizontal: 5,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: 'bold'
   },
 });
 
