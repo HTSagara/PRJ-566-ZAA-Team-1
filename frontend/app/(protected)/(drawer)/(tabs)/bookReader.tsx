@@ -453,20 +453,19 @@ const BookReader: React.FC = () => {
               <>
                 <View style={styles.imageHeader}>
                   <Text>Generated image:</Text>
-                  <TouchableOpacity onPress={deleteImageHighlight}>
-                    <Icon
-                      name="trash"
-                      size={24}
-                      style={{ color: "gray", marginHorizontal: 10 }}
-                    />
-                  </TouchableOpacity>
-
                   <TouchableOpacity onPress={() => handleRegenerate()}>
                     <Icon
                       name="refresh"
                       size={16}
                       color="#000000"
                       style={styles.refreshIcon}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={deleteImageHighlight}>
+                    <Icon
+                      name="trash"
+                      size={24}
+                      style={{ color: "gray", marginHorizontal: 10 }}
                     />
                   </TouchableOpacity>
                 </View>
