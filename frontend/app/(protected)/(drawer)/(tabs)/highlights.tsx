@@ -136,47 +136,51 @@ export default function ShowBookHighlights() {
           <Text>Create a highlight while in reading mode.</Text>
         </View>
       ) : (
-        <FlatList
-          data={highlight}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => {
-                navigation.navigate("bookReader", {
-                  bookId: bookId,
-                  userHighlight: item,
-                });
-              }}
-              style={styles.cardContainer}
-            >
-              <View style={styles.card}>
-                {item.imgUrl && (
-                  <Icon
-                    name="image"
-                    size={24}
-                    style={{ marginHorizontal: 10 }}
-                  />
-                )}
-                <Text style={styles.highlightText}>{item.text}</Text>
+        <View style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
+          <View style={{width: "100%", maxWidth: 1536}}>
+            <FlatList
+              data={highlight}
+              renderItem={({ item }) => (
                 <TouchableOpacity
                   onPress={() => {
-                    setModalVisible(true);
-                    setSelectedHighlightId(item.id);
-                    setSelectedHighlight(item);
+                    navigation.navigate("bookReader", {
+                      bookId: bookId,
+                      userHighlight: item,
+                    });
                   }}
+                  style={styles.cardContainer}
                 >
-                  <Entypo
-                    name="dots-three-vertical"
-                    size={24}
-                    style={styles.menuIcon}
-                  />
+                  <View style={styles.card}>
+                    {item.imgUrl && (
+                      <Icon
+                        name="image"
+                        size={24}
+                        style={{ marginHorizontal: 10 }}
+                      />
+                    )}
+                    <Text style={styles.highlightText}>{item.text}</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setModalVisible(true);
+                        setSelectedHighlightId(item.id);
+                        setSelectedHighlight(item);
+                      }}
+                    >
+                      <Entypo
+                        name="dots-three-vertical"
+                        size={24}
+                        style={styles.menuIcon}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          )}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.cardList}
-          numColumns={2}
-        />
+              )}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.cardList}
+              numColumns={1}
+            />
+          </View>
+        </View>
       )}
 
       {/* Delete Confirmation Modal */}
@@ -243,8 +247,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   cardContainer: {
-    flex: 1,
-    padding: 35,
+    padding: 10,
   },
   card: {
     flex: 1,
@@ -256,7 +259,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     marginHorizontal: 5,
-    maxWidth: "60%",
     backgroundColor: "#d9d9d9",
   },
   highlightText: {
@@ -308,15 +310,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   container: {
-    flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   header: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 10,
-    marginBottom: 10,
   },
   headerTitle: {
     fontSize: 28,
