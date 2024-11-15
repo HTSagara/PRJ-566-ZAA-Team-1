@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,25 +8,37 @@ import {
   Modal,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { getUser } from "@/utilities/authContext";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Entypo from "react-native-vector-icons/Entypo";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "./types";
 import { FlatList } from "react-native-gesture-handler";
-import { Highlight } from "@/utilities/backendService";
-import { getAllHighlightsByBookId } from "@/utilities/backendService";
+
+import { RootStackParamList } from "./types";
+
 import Loading from "@/components/Loading";
-import { deleteHighlight } from "@/utilities/backendService";
+import { AuthContext, type User } from "@/utilities/authContext";
+import {
+  Highlight,
+  getAllHighlightsByBookId,
+  deleteHighlight,
+  deleteHighlightImage,
+} from "@/utilities/backendService";
 
 export default function ShowBookHighlights() {
+  const user = useContext(AuthContext) as User;
+
   const route = useRoute();
   const [highlight, setHighlight] = useState<Highlight[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+
   const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(
     null,
   ); // Track selected highlight ID
+  const [selectedHighlight, setSelectedHighlight] = useState<Highlight | null>(
+    null,
+  );
+
   const [loading, setLoading] = useState(false); // Loading indicator
   const [error, setError] = useState<string | null>(null); // Error handling
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -36,12 +48,6 @@ export default function ShowBookHighlights() {
   useEffect(() => {
     const fetchHighlights = async () => {
       try {
-        const user = await getUser();
-        if (!user) {
-          Alert.alert("Error", "No user found.");
-          return;
-        }
-
         const data = await getAllHighlightsByBookId(user, bookId);
         setHighlight(data);
       } catch (err) {
@@ -54,52 +60,65 @@ export default function ShowBookHighlights() {
   }, [bookId, backendURL]);
 
   const handleDeleteHighlight = async () => {
-    // console.log("Book ID:", bookId); // Log bookId before deletion
-    // console.log("Selected Highlight ID:", selectedHighlightId); // Log selectedHighlightId before deletion
-    const user = await getUser();
-    if (!user) {
-      Alert.alert("Error", "No user found.");
-      return;
-    }
+    if (selectedHighlightId) {
+      setLoading(true);
+      try {
+        await deleteHighlight(user, bookId, selectedHighlightId);
 
-    if (!selectedHighlightId || !bookId) {
-      console.log("Error: Missing selected highlight or book ID");
-      return;
-    }
+        // Remove highlight
+        setHighlight((prevHighlights) => {
+          return prevHighlights.filter((h) => h.id !== selectedHighlightId);
+        });
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await deleteHighlight(user, bookId, selectedHighlightId);
-      if (data) {
-        setHighlight((prevHighlights) =>
-          prevHighlights.filter((h) => h.id !== selectedHighlightId),
-        );
         setModalVisible(false);
+      } catch (err) {
+        setError(`Error with deleting highlight: ${err}`);
+      } finally {
+        setLoading(false);
+        setSelectedHighlightId(null);
       }
-    } catch (err) {
-      setError(`Error with deleting highlight: ${err}`);
-    } finally {
-      setLoading(false);
-      setSelectedHighlightId(null);
+    }
+  };
+
+  const handleDeleteHighlightImage = async () => {
+    if (selectedHighlightId) {
+      setLoading(true);
+      setError(null);
+      try {
+        await deleteHighlightImage(user, bookId, selectedHighlightId);
+
+        // Remove image from the selected highlight
+        setHighlight((prevHighlights) => {
+          return prevHighlights.map((item) => {
+            return item.id === selectedHighlightId
+              ? { ...item, imgUrl: undefined }
+              : item;
+          });
+        });
+
+        setModalVisible(false);
+      } catch (err) {
+        console.log(`Exception while calling the delete API: ${err}.`);
+        setError("Error removing image.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   return (
-    <div>
-      <div>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("bookDetails", { bookId })}
-            >
-              <Icon name="chevron-left" size={24} color="#000" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Highlights</Text>
-          </View>
+    <>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("bookDetails", { bookId })}
+          >
+            <Icon name="chevron-left" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Highlights</Text>
         </View>
-      </div>
+      </View>
+
       {highlight.length <= 0 ? (
         <View
           style={{
@@ -113,46 +132,57 @@ export default function ShowBookHighlights() {
           <Text>Create a highlight while in reading mode.</Text>
         </View>
       ) : (
-        <FlatList
-          data={highlight}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => {
-                navigation.navigate("bookReader", {
-                  bookId: bookId,
-                  userHighlight: item,
-                });
-              }}
-              style={styles.cardContainer}
-            >
-              <View style={styles.card}>
-                {item.imgUrl && (
-                  <Icon
-                    name="image"
-                    size={24}
-                    style={{ marginHorizontal: 10 }}
-                  />
-                )}
-                <Text style={styles.highlightText}>{item.text}</Text>
+        <View
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View style={{ width: "100%", maxWidth: 1536 }}>
+            <FlatList
+              data={highlight}
+              renderItem={({ item }) => (
                 <TouchableOpacity
                   onPress={() => {
-                    setModalVisible(true);
-                    setSelectedHighlightId(item.id);
+                    navigation.navigate("bookReader", {
+                      bookId: bookId,
+                      userHighlight: item,
+                    });
                   }}
+                  style={styles.cardContainer}
                 >
-                  <Entypo
-                    name="dots-three-vertical"
-                    size={24}
-                    style={styles.menuIcon}
-                  />
+                  <View style={styles.card}>
+                    {item.imgUrl && (
+                      <Icon
+                        name="image"
+                        size={24}
+                        style={{ marginHorizontal: 10 }}
+                      />
+                    )}
+                    <Text style={styles.highlightText}>{item.text}</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setModalVisible(true);
+                        setSelectedHighlightId(item.id);
+                        setSelectedHighlight(item);
+                      }}
+                    >
+                      <Entypo
+                        name="dots-three-vertical"
+                        size={24}
+                        style={styles.menuIcon}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          )}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.cardList}
-          numColumns={2}
-        />
+              )}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.cardList}
+              numColumns={1}
+            />
+          </View>
+        </View>
       )}
 
       {/* Delete Confirmation Modal */}
@@ -163,6 +193,7 @@ export default function ShowBookHighlights() {
         onRequestClose={() => {
           setModalVisible(!modalVisible);
           setSelectedHighlightId(null);
+          setSelectedHighlight(null);
         }}
       >
         <View style={styles.modalContainer}>
@@ -172,14 +203,21 @@ export default function ShowBookHighlights() {
               onPress={() => {
                 setModalVisible(!modalVisible);
                 setSelectedHighlightId(null);
+                setSelectedHighlight(null);
               }}
             >
               <Ionicons name="close" size={28} color="#000" />
             </TouchableOpacity>
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.textStyle}>Delete Image highlight</Text>
-              </TouchableOpacity>
+              {selectedHighlight?.imgUrl && (
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleDeleteHighlightImage}
+                >
+                  <Text style={styles.textStyle}>Delete Image Highlight</Text>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
                 style={[styles.button]}
                 onPress={handleDeleteHighlight}
@@ -204,7 +242,7 @@ export default function ShowBookHighlights() {
           </View>
         </Modal>
       )}
-    </div>
+    </>
   );
 }
 
@@ -214,8 +252,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   cardContainer: {
-    flex: 1,
-    padding: 35,
+    padding: 10,
   },
   card: {
     flex: 1,
@@ -227,7 +264,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     marginHorizontal: 5,
-    maxWidth: "60%",
     backgroundColor: "#d9d9d9",
   },
   highlightText: {
@@ -260,17 +296,17 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   buttonRow: {
-    flex: 1,
-    marginTop: 15,
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 15,
     width: "100%",
   },
   button: {
     borderRadius: 10,
     padding: 10,
     elevation: 2,
-    marginRight: 15,
+    marginHorizontal: 10,
     backgroundColor: "red",
   },
   textStyle: {
@@ -279,15 +315,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   container: {
-    flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   header: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 10,
-    marginBottom: 10,
   },
   headerTitle: {
     fontSize: 28,
