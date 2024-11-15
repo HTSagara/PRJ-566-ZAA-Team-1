@@ -52,10 +52,10 @@ const BookReader: React.FC = () => {
   const [saveError, setSaveError] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>("Saving highlight...");
   const [saveErrorMessage, setSaveErrorMessage] = useState<string>(
-    "Error saving highlight."
+    "Error saving highlight.",
   );
   const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(
-    null
+    null,
   );
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -65,7 +65,7 @@ const BookReader: React.FC = () => {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [rendition, setRendition] = useState<Rendition | undefined>(undefined);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
-    null
+    null,
   );
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [fontSize, setFontSize] = useState(16);
@@ -117,7 +117,7 @@ const BookReader: React.FC = () => {
             fill: "red",
             "fill-opacity": "0.5",
             "mix-blend-mode": "multiply",
-          }
+          },
         );
       });
 
@@ -188,13 +188,13 @@ const BookReader: React.FC = () => {
       const putSuccess = await regenerateHighlightImage(
         user,
         bookId,
-        highlightId
+        highlightId,
       );
       if (putSuccess) {
         const updatedHighlight = await fetchUpdatedHighlight(
           user,
           bookId,
-          highlightId
+          highlightId,
         );
 
         const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
@@ -203,15 +203,15 @@ const BookReader: React.FC = () => {
           highlights.map((h) =>
             h.location === selectedHighlight.location
               ? { ...h, imgUrl: timestampedUrl }
-              : h
-          )
+              : h,
+          ),
         );
         setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });
       }
     } catch (error) {
       console.error(
         "Error in regenerating image or fetching updated highlight:",
-        error
+        error,
       );
     } finally {
       setModalVisible(false);
@@ -243,7 +243,7 @@ const BookReader: React.FC = () => {
               fill: "red",
               "fill-opacity": "0.5",
               "mix-blend-mode": "multiply",
-            }
+            },
           );
           // @ts-ignore: DO NOT REMOVE THIS COMMENT
           // This annotation was added because typescript throws an error
@@ -268,7 +268,7 @@ const BookReader: React.FC = () => {
   const deleteImageHighlight = async () => {
     setLoading(true);
     setError(null);
-  
+
     try {
       const response = await fetch(
         `http://localhost:8000/book/${bookId}/highlight/${highlightId}/image`,
@@ -277,14 +277,14 @@ const BookReader: React.FC = () => {
           headers: {
             Authorization: `Bearer ${user.accessToken}`,
           },
-        }
+        },
       );
-  
+
       if (response.ok) {
         setHighlights((prevHighlights) =>
           prevHighlights.map((item) =>
-            item.id === highlightId ? { ...item, imgUrl: undefined } : item
-          )
+            item.id === highlightId ? { ...item, imgUrl: undefined } : item,
+          ),
         );
         setImageModalVisible(false); // Close the modal
       } else {
@@ -298,7 +298,6 @@ const BookReader: React.FC = () => {
       setLoading(false);
     }
   };
-  
 
   const handleRenderImage = async () => {
     if (rendition && selection) {
@@ -338,21 +337,21 @@ const BookReader: React.FC = () => {
 
   const applySettings = () => {
     if (rendition) {
-        // Apply font size directly
-        rendition.themes.fontSize(`${fontSize}px`);
+      // Apply font size directly
+      rendition.themes.fontSize(`${fontSize}px`);
 
-        // Register and apply the custom theme for dark/light mode and font color
-        rendition.themes.register("custom", {
-            "html, body": {
-                color: isDarkMode ? "#FFFFFF" : "#000000",
-                background: isDarkMode ? "#000000" : "#FFFFFF",
-            },
-        });
-        rendition.themes.select("custom");
+      // Register and apply the custom theme for dark/light mode and font color
+      rendition.themes.register("custom", {
+        "html, body": {
+          color: isDarkMode ? "#FFFFFF" : "#000000",
+          background: isDarkMode ? "#000000" : "#FFFFFF",
+        },
+      });
+      rendition.themes.select("custom");
     }
 
     setSettingsModalVisible(false);
-};
+  };
 
   if (loading) {
     return (

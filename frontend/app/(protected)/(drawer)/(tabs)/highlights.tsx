@@ -1,11 +1,11 @@
 import React, { useContext, useEffect, useState } from "react";
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    Alert,
-    StyleSheet,
-    Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  Modal,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -18,15 +18,14 @@ import { RootStackParamList } from "./types";
 
 import Loading from "@/components/Loading";
 import { AuthContext, type User } from "@/utilities/authContext";
-import { 
-  Highlight, 
-  getAllHighlightsByBookId, 
-  deleteHighlight, 
-  deleteHighlightImage
+import {
+  Highlight,
+  getAllHighlightsByBookId,
+  deleteHighlight,
+  deleteHighlightImage,
 } from "@/utilities/backendService";
 
 export default function ShowBookHighlights() {
-
   const user = useContext(AuthContext) as User;
 
   const route = useRoute();
@@ -36,7 +35,9 @@ export default function ShowBookHighlights() {
   const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(
     null,
   ); // Track selected highlight ID
-  const [selectedHighlight, setSelectedHighlight] = useState<Highlight | null>(null);
+  const [selectedHighlight, setSelectedHighlight] = useState<Highlight | null>(
+    null,
+  );
 
   const [loading, setLoading] = useState(false); // Loading indicator
   const [error, setError] = useState<string | null>(null); // Error handling
@@ -49,8 +50,7 @@ export default function ShowBookHighlights() {
       try {
         const data = await getAllHighlightsByBookId(user, bookId);
         setHighlight(data);
-      } 
-      catch (err) {
+      } catch (err) {
         console.log(`Exception while calling the API: ${err}.`);
         Alert.alert("Error", "Failed during the API call.");
       }
@@ -66,16 +66,14 @@ export default function ShowBookHighlights() {
         await deleteHighlight(user, bookId, selectedHighlightId);
 
         // Remove highlight
-        setHighlight(prevHighlights => {
-          return prevHighlights.filter(h => h.id !== selectedHighlightId);
+        setHighlight((prevHighlights) => {
+          return prevHighlights.filter((h) => h.id !== selectedHighlightId);
         });
 
         setModalVisible(false);
-      } 
-      catch (err) {
+      } catch (err) {
         setError(`Error with deleting highlight: ${err}`);
-      } 
-      finally {
+      } finally {
         setLoading(false);
         setSelectedHighlightId(null);
       }
@@ -90,21 +88,19 @@ export default function ShowBookHighlights() {
         await deleteHighlightImage(user, bookId, selectedHighlightId);
 
         // Remove image from the selected highlight
-        setHighlight(prevHighlights => {
-          return prevHighlights.map(item => {
-            return item.id === selectedHighlightId ? 
-              { ...item, imgUrl: undefined } : 
-              item;
+        setHighlight((prevHighlights) => {
+          return prevHighlights.map((item) => {
+            return item.id === selectedHighlightId
+              ? { ...item, imgUrl: undefined }
+              : item;
           });
         });
 
         setModalVisible(false);
-      } 
-      catch (err) {
+      } catch (err) {
         console.log(`Exception while calling the delete API: ${err}.`);
         setError("Error removing image.");
-      } 
-      finally {
+      } finally {
         setLoading(false);
       }
     }
@@ -136,8 +132,14 @@ export default function ShowBookHighlights() {
           <Text>Create a highlight while in reading mode.</Text>
         </View>
       ) : (
-        <View style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
-          <View style={{width: "100%", maxWidth: 1536}}>
+        <View
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View style={{ width: "100%", maxWidth: 1536 }}>
             <FlatList
               data={highlight}
               renderItem={({ item }) => (
@@ -208,7 +210,10 @@ export default function ShowBookHighlights() {
             </TouchableOpacity>
             <View style={styles.buttonRow}>
               {selectedHighlight?.imgUrl && (
-                <TouchableOpacity style={styles.button} onPress={handleDeleteHighlightImage}>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleDeleteHighlightImage}
+                >
                   <Text style={styles.textStyle}>Delete Image Highlight</Text>
                 </TouchableOpacity>
               )}
@@ -239,7 +244,7 @@ export default function ShowBookHighlights() {
       )}
     </>
   );
-}  
+}
 
 const styles = StyleSheet.create({
   cardList: {

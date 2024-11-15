@@ -143,7 +143,7 @@ export async function getAllHighlightsByBookId(user: User, bookId: string) {
 export async function deleteHighlight(
   user: User,
   bookId: string,
-  highlightId: string
+  highlightId: string,
 ) {
   const response = await fetch(
     backendURL + `/book/${bookId}/highlight/${highlightId}`,
@@ -153,7 +153,7 @@ export async function deleteHighlight(
         "Content-Type": "application/json",
         Authorization: `Bearer ${user.accessToken}`,
       },
-    }
+    },
   );
 
   // throw error if bad response
@@ -167,14 +167,14 @@ export async function deleteHighlight(
 export async function deleteHighlightImage(
   user: User,
   bookId: string,
-  highlightId: string
+  highlightId: string,
 ) {
   const response = await fetch(
     `${backendURL}/book/${bookId}/highlight/${highlightId}/image`,
     {
       method: "DELETE",
-      headers:  user.authorizationHeaders(),
-    }
+      headers: user.authorizationHeaders(),
+    },
   );
 
   // throw error if bad response
@@ -188,7 +188,7 @@ export async function deleteHighlightImage(
 export async function regenerateHighlightImage(
   user: User,
   bookId: string,
-  highlightId: string
+  highlightId: string,
 ) {
   const url = `${backendURL}/book/${bookId}/highlight/${highlightId}`;
   const response = await fetch(url, {
@@ -212,7 +212,7 @@ export async function regenerateHighlightImage(
 export async function fetchUpdatedHighlight(
   user: User,
   bookId: string,
-  highlightId: string
+  highlightId: string,
 ) {
   const url = `${backendURL}/book/${bookId}/highlight/${highlightId}`;
   const response = await fetch(url, {
