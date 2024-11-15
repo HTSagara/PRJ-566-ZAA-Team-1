@@ -509,8 +509,8 @@ const BookReader: React.FC = () => {
                   <TouchableOpacity onPress={deleteImageHighlight}>
                     <Icon
                       name="trash"
-                      size={24}
-                      style={{ color: "gray", marginHorizontal: 10 }}
+                      size={19}
+                      style={styles.trashIcon}
                     />
                   </TouchableOpacity>
                 </View>
@@ -655,12 +655,16 @@ const styles = StyleSheet.create({
     fontSize: 20
   },
   refreshIcon: {
-    marginLeft: 8,
+    marginLeft: 16,
     marginTop: 5
   },
   editTextIcon: {
-    marginLeft: 15,
-    marginTop: 5
+    marginLeft: 16,
+    marginTop: 3
+  },
+  trashIcon: {
+    marginLeft: 16,
+    marginTop: 5,
   },
   title: {
     fontSize: 18,
@@ -694,11 +698,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'white',
     fontWeight: 'bold'
-  },
-  trashIcon: {
-    width: 24,
-    height: 24,
-    marginLeft: 10,
   },
 });
 
