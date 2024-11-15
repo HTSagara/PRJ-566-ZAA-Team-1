@@ -22,6 +22,14 @@ export interface Highlight {
   imgUrl?: string;
 }
 
+export interface Selection {
+  id?: string;
+  text: string;
+  location: string;
+  imgUrl?: string;
+}
+
+
 // This method will fetch all the books for the currently logged
 export async function getAllBooks(user: User) {
   const response = await fetch(backendURL + `/books`, {
@@ -230,5 +238,42 @@ export async function fetchUpdatedHighlight(
     const error = await response.json();
     console.error("Failed to fetch updated highlight data:", error);
     throw new Error("Failed to fetch updated highlight data.");
+  }
+}
+
+// This method will create a new highlight for the user
+export async function createUserHighlight(user: User, bookId: string, selection: Selection)
+{
+  const response = await fetch(backendURL + `/book/${bookId}/highlight`, {
+    method: "POST",
+    body: JSON.stringify(selection),
+    headers: user.authorizationHeaders(),
+  });
+
+  if (response.status === 200)
+    return true;
+  else 
+    return false;
+}
+
+export async function createCustomImage(user: User, bookId: string, highlightId: string, customText: string) {
+  const response = await fetch( backendURL + `/book/${bookId}/highlight/${highlightId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(customText),
+      headers: {
+        Authorization: `Bearer ${user.accessToken}`,
+      },
+    }
+  );
+
+  if (response.status === 200)
+  {
+    console.log("Image regeneration succeeded");
+    return true;
+  }else {
+    const error = await response.json();
+    console.error("Image regeneration failed:", error);
+    throw new Error("Failed to regenerate highlight image.");
   }
 }
