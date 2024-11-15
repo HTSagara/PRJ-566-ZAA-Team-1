@@ -156,12 +156,31 @@ export async function deleteHighlight(
     }
   );
 
-  // handle the response
-  if (response.ok) {
-    return true;
-  } else {
+  // throw error if bad response
+  if (!response.ok) {
     const errorData = await response.json();
     throw new Error(`Failed to delete highlight: ${errorData.message}`);
+  }
+}
+
+// Delete highlight function
+export async function deleteHighlightImage(
+  user: User,
+  bookId: string,
+  highlightId: string
+) {
+  const response = await fetch(
+    `${backendURL}/book/${bookId}/highlight/${highlightId}/image`,
+    {
+      method: "DELETE",
+      headers:  user.authorizationHeaders(),
+    }
+  );
+
+  // throw error if bad response
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(`Failed to delete highlight image: ${errorData.message}`);
   }
 }
 

@@ -6,22 +6,28 @@ import {
     Alert,
     StyleSheet,
     Modal,
-    ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { AuthContext, User, getUser } from "@/utilities/authContext";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Entypo from "react-native-vector-icons/Entypo";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "./types";
 import { FlatList } from "react-native-gesture-handler";
-import { Highlight } from "@/utilities/backendService";
-import { getAllHighlightsByBookId } from "@/utilities/backendService";
+
+import { RootStackParamList } from "./types";
+
 import Loading from "@/components/Loading";
-import { deleteHighlight } from "@/utilities/backendService";
+import { AuthContext, type User } from "@/utilities/authContext";
+import { 
+  Highlight, 
+  getAllHighlightsByBookId, 
+  deleteHighlight, 
+  deleteHighlightImage
+} from "@/utilities/backendService";
 
 export default function ShowBookHighlights() {
+
+  const user = useContext(AuthContext) as User;
 
   const route = useRoute();
   const [highlight, setHighlight] = useState<Highlight[]>([]);
@@ -41,12 +47,6 @@ export default function ShowBookHighlights() {
   useEffect(() => {
     const fetchHighlights = async () => {
       try {
-        const user = await getUser();
-        if (!user) {
-          Alert.alert("Error", "No user found.");
-          return;
-        }
-
         const data = await getAllHighlightsByBookId(user, bookId);
         setHighlight(data);
       } 
@@ -59,29 +59,36 @@ export default function ShowBookHighlights() {
     fetchHighlights();
   }, [bookId, backendURL]);
 
-  // Function to handle delete image highlight
-  const deleteImageHighlight = async () => {
-    setLoading(true);
-    setError(null);
+  const handleDeleteHighlight = async () => {
+    if (selectedHighlightId) {
+      setLoading(true);
+      try {
+        await deleteHighlight(user, bookId, selectedHighlightId);
 
-    try {
-      const user = await getUser();
-      if (!user) {
-        Alert.alert("Error", "No user found.");
+        // Remove highlight
+        setHighlight(prevHighlights => {
+          return prevHighlights.filter(h => h.id !== selectedHighlightId);
+        });
+
+        setModalVisible(false);
+      } 
+      catch (err) {
+        setError(`Error with deleting highlight: ${err}`);
+      } 
+      finally {
         setLoading(false);
-        return;
+        setSelectedHighlightId(null);
       }
-      const response = await fetch(
-        `${backendURL}/book/${bookId}/highlight/${selectedHighlightId}/image`,
-        {
-            method: "DELETE",
-            headers: {
-                Authorization: `Bearer ${user.accessToken}`,
-            },
-        }
-      );
+    }
+  };
 
-      if (response.ok) {
+  const handleDeleteHighlightImage = async () => {
+    if (selectedHighlightId) {
+      setLoading(true);
+      setError(null);
+      try {
+        await deleteHighlightImage(user, bookId, selectedHighlightId);
+
         // Remove image from the selected highlight
         setHighlight(prevHighlights => {
           return prevHighlights.map(item => {
@@ -92,40 +99,14 @@ export default function ShowBookHighlights() {
         });
 
         setModalVisible(false);
-      } else {
-        const errorData = await response.json();
-        setError(`Error removing image: ${errorData.message}`);
+      } 
+      catch (err) {
+        console.log(`Exception while calling the delete API: ${err}.`);
+        setError("Error removing image.");
+      } 
+      finally {
+        setLoading(false);
       }
-    } 
-    catch (err) {
-      console.log(`Exception while calling the delete API: ${err}.`);
-      setError("Error removing image.");
-    } 
-    finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteHighlight = async () => {
-    const user = await getUser();
-    if (!user) {
-      Alert.alert("Error", "No user found.");
-      return;
-    }
-
-    try {
-      const data = selectedHighlightId && await deleteHighlight(user, bookId, selectedHighlightId);
-      if (data) {
-        setHighlight((prevHighlights) =>
-          prevHighlights.filter((h) => h.id !== selectedHighlightId),
-        );
-        setModalVisible(false);
-      }
-    } catch (err) {
-      setError(`Error with deleting highlight: ${err}`);
-    } finally {
-      setLoading(false);
-      setSelectedHighlightId(null);
     }
   };
 
@@ -223,7 +204,7 @@ export default function ShowBookHighlights() {
             </TouchableOpacity>
             <View style={styles.buttonRow}>
               {selectedHighlight?.imgUrl && (
-                <TouchableOpacity style={styles.button} onPress={deleteImageHighlight}>
+                <TouchableOpacity style={styles.button} onPress={handleDeleteHighlightImage}>
                   <Text style={styles.textStyle}>Delete Image Highlight</Text>
                 </TouchableOpacity>
               )}
