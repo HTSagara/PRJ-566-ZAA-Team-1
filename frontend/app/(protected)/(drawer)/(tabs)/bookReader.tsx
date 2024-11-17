@@ -25,8 +25,9 @@ import {
   fetchUpdatedHighlight,
   getAllHighlightsByBookId,
   getBookByBookId,
-  createCustomImage, 
-  createUserHighlight, 
+  createCustomImage,
+  createUserHighlight,
+  deleteHighlight,
 } from "@/utilities/backendService";
 import Loading from "@/components/Loading";
 
@@ -353,32 +354,31 @@ const BookReader: React.FC = () => {
     setSaveMessage("Visualizing highlight...");
     setModalVisible(true);
 
-    if(inputText)
-    {
-      try
-      {
+    if (inputText) {
+      try {
         const imgUrl = selectedHighlight?.imgUrl;
         const highlightId = imgUrl?.split("/").pop()?.replace(".png", "") || '';
 
         const response = await createCustomImage(user, bookId, highlightId, inputText);
 
-        if(response) {
+        if (response) {
           const updatedHighlight = await fetchUpdatedHighlight(
-          user,
-          bookId,
-          highlightId
-        );
+            user,
+            bookId,
+            highlightId
+          );
 
-        const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
+          const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
 
-        setHighlights(
-          highlights.map((h) =>
-            h.location === selectedHighlight?.location
-              ? { ...h, imgUrl: timestampedUrl }
-              : h
-          )
-        );
-        setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });}
+          setHighlights(
+            highlights.map((h) =>
+              h.location === selectedHighlight?.location
+                ? { ...h, imgUrl: timestampedUrl }
+                : h
+            )
+          );
+          setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });
+        }
       } catch (error) {
         console.error(
           "Error in regenerating image or fetching updated highlight:",
@@ -389,6 +389,33 @@ const BookReader: React.FC = () => {
       }
     }
   }
+
+  // Delete highlight with no text from the model
+  const handleDeletehighlight = async () => {
+    if (selectedHighlight) {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Call the delete API
+        await deleteHighlight(user, bookId, selectedHighlight.id);
+
+        // Remove the selected highlight from the list
+        setHighlights((prevHighlights) =>
+          prevHighlights.filter((item) => item.id !== selectedHighlight.id)
+        );
+
+        // Optionally clear the selectedHighlight
+        setSelectedHighlight(null);
+      } catch (err) {
+        console.log(`Exception while calling the delete API: ${err}.`);
+        setError("Error removing image.");
+      } finally {
+        setLoading(false);
+        setImageModalVisible(false);
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -521,7 +548,17 @@ const BookReader: React.FC = () => {
                 />
               </>
             ) : (
-              <Text>No image available for this highlight.</Text>
+              <>
+                <View style={styles.imageHeaderTrash}>
+                  <Icon
+                    name="trash"
+                    size={24}
+                    style={{ color: "gray", marginHorizontal: 10 }}
+                    onPress={handleDeletehighlight}
+                  />
+                </View>
+                <Text style={{ marginTop: 10 }}>No image available for this highlight.</Text>
+              </>
             )}
             <TouchableOpacity onPress={() => setImageModalVisible(false)}>
               <Text style={styles.closeButtonText}>Close</Text>
@@ -698,6 +735,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'white',
     fontWeight: 'bold'
+  },
+  imageHeaderTrash: {
+    position: 'absolute',
+    top: 11,
+    right: 11,
+    zIndex: 5,
   },
 });
 

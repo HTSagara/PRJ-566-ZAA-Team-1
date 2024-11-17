@@ -23,7 +23,7 @@ export interface Highlight {
 }
 
 export interface Selection {
-  id?: string;
+  id: string;
   text: string;
   location: string;
   imgUrl?: string;
@@ -242,8 +242,7 @@ export async function fetchUpdatedHighlight(
 }
 
 // This method will create a new highlight for the user
-export async function createUserHighlight(user: User, bookId: string, selection: Selection)
-{
+export async function createUserHighlight(user: User, bookId: string, selection: Selection) {
   const response = await fetch(backendURL + `/book/${bookId}/highlight`, {
     method: "POST",
     body: JSON.stringify(selection),
@@ -252,12 +251,12 @@ export async function createUserHighlight(user: User, bookId: string, selection:
 
   if (response.status === 200)
     return true;
-  else 
+  else
     return false;
 }
 
 export async function createCustomImage(user: User, bookId: string, highlightId: string, customText: string) {
-  const response = await fetch( backendURL + `/book/${bookId}/highlight/${highlightId}`,
+  const response = await fetch(backendURL + `/book/${bookId}/highlight/${highlightId}`,
     {
       method: 'PUT',
       body: JSON.stringify(customText),
@@ -267,11 +266,10 @@ export async function createCustomImage(user: User, bookId: string, highlightId:
     }
   );
 
-  if (response.status === 200)
-  {
+  if (response.status === 200) {
     console.log("Image regeneration succeeded");
     return true;
-  }else {
+  } else {
     const error = await response.json();
     console.error("Image regeneration failed:", error);
     throw new Error("Failed to regenerate highlight image.");
