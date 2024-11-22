@@ -295,22 +295,32 @@ const BookReader: React.FC = () => {
   };
 
   const handleRenderImage = async () => {
-    if (rendition && selection) {
+    const highlightToRender = selection || selectedHighlight;
+  
+    if (rendition && highlightToRender) {
       setSaveMessage("Visualizing highlight...");
       setModalVisible(true);
-
+  
       try {
         const url = `http://localhost:8000/book/${bookId}/highlight?image=true`;
         const response = await fetch(url, {
           method: "POST",
-          body: JSON.stringify(selection),
+          body: JSON.stringify(highlightToRender),
           headers: user.authorizationHeaders(),
         });
-
+  
         if (response.ok) {
           const data = await response.json();
           setGeneratedImageUrl(data.imgUrl || null);
-          setHighlights([...highlights, { ...selection, imgUrl: data.imgUrl }]);
+  
+          setHighlights([
+            ...highlights,
+            { ...highlightToRender, imgUrl: data.imgUrl },
+          ]);
+          setSelectedHighlight({
+            ...highlightToRender,
+            imgUrl: data.imgUrl,
+          });
         } else {
           console.error("Failed to visualize highlight", response);
           setSaveError(true);
@@ -321,9 +331,11 @@ const BookReader: React.FC = () => {
       } finally {
         setModalVisible(false);
       }
+    } else {
+      console.error("No valid highlight selected or found");
     }
     setContextMenu({ visible: false, x: 0, y: 0 });
-  };
+  };  
 
   const handleHighlightClick = (highlight: Selection) => {
     setSelectedHighlight(highlight);
@@ -490,7 +502,7 @@ const BookReader: React.FC = () => {
               <>
                 <View style={styles.imageHeader}>
                   <Text style={{ fontSize: 20 }}>Generated image:</Text>
-                  <TouchableOpacity onPress={() => handleRegenerate()}>
+                  <TouchableOpacity onPress={handleRegenerate}>
                     <Icon
                       name="refresh"
                       size={19}
@@ -507,11 +519,7 @@ const BookReader: React.FC = () => {
                     />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={deleteImageHighlight}>
-                    <Icon
-                      name="trash"
-                      size={19}
-                      style={styles.trashIcon}
-                    />
+                    <Icon name="trash" size={19} style={styles.trashIcon} />
                   </TouchableOpacity>
                 </View>
                 <Image
@@ -521,7 +529,12 @@ const BookReader: React.FC = () => {
                 />
               </>
             ) : (
-              <Text>No image available for this highlight.</Text>
+              <>
+                <Text>No image available for this highlight.</Text>
+                <TouchableOpacity onPress={handleRenderImage}>
+                  <Text style={styles.visualizeButton}>Visualize</Text>
+                </TouchableOpacity>
+              </>
             )}
             <TouchableOpacity onPress={() => setImageModalVisible(false)}>
               <Text style={styles.closeButtonText}>Close</Text>
@@ -698,6 +711,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'white',
     fontWeight: 'bold'
+  },
+  visualizeButton: {
+    backgroundColor: "#007BFF",
+    color: "#FFFFFF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginTop: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 
