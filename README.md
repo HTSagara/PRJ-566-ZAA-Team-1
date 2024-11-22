@@ -46,3 +46,6 @@ or if you have already built the images and have no changes, you could omit `--b
 ```bash
 docker compose up
 ```
+
+After running `docker compose up --build` the web app should be accessible in the browser on `http://localhost:8081/`
+
