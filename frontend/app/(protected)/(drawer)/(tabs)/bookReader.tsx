@@ -26,7 +26,9 @@ import {
   getAllHighlightsByBookId,
   getBookByBookId,
   createCustomImage, 
-  createUserHighlight, 
+  createUserHighlight,
+  getBookSettings,
+  updateBookSettings,
 } from "@/utilities/backendService";
 import Loading from "@/components/Loading";
 
@@ -73,35 +75,49 @@ const BookReader: React.FC = () => {
   const imageURL = selectedHighlight?.imgUrl;
   const highlightId = imageURL?.split("/").pop()?.replace(".png", "");
 
-  // Fetch book data
-  useEffect(() => {
-    if (!bookId) {
-      setError("No bookId provided");
-      setLoading(false);
-      return;
-    }
+  // Fetch book data and settings
+useEffect(() => {
+  if (!bookId) {
+    setError("No bookId provided");
+    setLoading(false);
+    return;
+  }
 
-    const fetchBook = async () => {
-      try {
-        const response = await getBookByBookId(user, bookId);
-        setBookUrl(response);
+  const fetchBook = async () => {
+    try {
+      const response = await getBookByBookId(user, bookId);
+      setBookUrl(response);
 
-        const data = await getAllHighlightsByBookId(user, bookId);
-        setHighlights(data);
+      const data = await getAllHighlightsByBookId(user, bookId);
+      setHighlights(data);
 
-        if (userHighlight && userHighlight.location) {
-          setLocation(userHighlight.location);
-        }
-      } catch (error) {
-        console.error("Error fetching book:", error);
-        setError("Error fetching book.");
-      } finally {
-        setLoading(false);
+      if (userHighlight && userHighlight.location) {
+        setLocation(userHighlight.location);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching book:", error);
+      setError("Error fetching book.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchBook();
-  }, [bookId, user]);
+  const fetchSettings = async () => {
+    try {
+      const response = await getBookSettings(user, bookId);
+      if (response) {
+        setFontSize(response.fontSize || 16);
+        setIsDarkMode(response.darkMode || false);
+      }
+    } catch (err) {
+      console.error("Error fetching book settings:", err);
+    }
+  };
+
+  fetchBook();
+  fetchSettings();
+}, [bookId, user]);
+
 
   // Adding highlights
   useEffect(() => {
@@ -331,22 +347,29 @@ const BookReader: React.FC = () => {
   };
 
   const applySettings = () => {
-    if (rendition) {
-      // Apply font size directly
-      rendition.themes.fontSize(`${fontSize}px`);
+  if (rendition) {
+    rendition.themes.fontSize(`${fontSize}px`);
+    rendition.themes.register("custom", {
+      "html, body": {
+        color: isDarkMode ? "#FFFFFF" : "#000000",
+        background: isDarkMode ? "#000000" : "#FFFFFF",
+      },
+    });
+    rendition.themes.select("custom");
+  }
 
-      // Register and apply the custom theme for dark/light mode and font color
-      rendition.themes.register("custom", {
-        "html, body": {
-          color: isDarkMode ? "#FFFFFF" : "#000000",
-          background: isDarkMode ? "#000000" : "#FFFFFF",
-        },
-      });
-      rendition.themes.select("custom");
+  const saveSettings = async () => {
+    try {
+      await updateBookSettings(user, bookId, { fontSize, darkMode: isDarkMode });
+    } catch (err) {
+      console.error("Error saving book settings:", err);
     }
-
-    setSettingsModalVisible(false);
   };
+  saveSettings();
+
+  setSettingsModalVisible(false);
+};
+
 
   //handle edit icon for custom text image generation
   const handleCustomImagePrompt = async () => {
@@ -415,7 +438,17 @@ const BookReader: React.FC = () => {
           epubInitOptions={{ openAs: "epub" }}
           location={location}
           locationChanged={(epubcfi: string) => setLocation(epubcfi)}
-          getRendition={(rendition: Rendition) => setRendition(rendition)}
+          getRendition={(rendition: Rendition) => {setRendition(rendition);
+// Apply settings on book render
+  rendition.themes.fontSize(`${fontSize}px`);
+  rendition.themes.register("custom", {
+    "html, body": {
+      color: isDarkMode ? "#FFFFFF" : "#000000",
+      background: isDarkMode ? "#000000" : "#FFFFFF",
+    },
+  });
+  rendition.themes.select("custom");
+}}
         />
       ) : (
         <Text>Book URL is not available.</Text>
