@@ -250,9 +250,12 @@ export async function createUserHighlight(user: User, bookId: string, selection:
   });
 
   if (response.status === 200)
-    return true;
+    return response;
   else
-    return false;
+  {
+    const error = await response.json();
+    console.error("Error in creating Highlight:", error);
+  }
 }
 
 export async function createCustomImage(user: User, bookId: string, highlightId: string, customText: string) {

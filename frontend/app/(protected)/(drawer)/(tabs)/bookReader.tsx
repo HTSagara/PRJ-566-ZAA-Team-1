@@ -247,6 +247,7 @@ const BookReader: React.FC = () => {
           // The return type for getContents() is outdated and actually returns
           //   Contents[] instead of Contents
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
+          setHighlights([...highlights, { ...selection }]);
           setSaveError(false);
         } else {
           console.error("Failed to save highlight", response);
@@ -282,7 +283,7 @@ const BookReader: React.FC = () => {
             item.id === highlightId ? { ...item, imgUrl: undefined } : item,
           ),
         );
-        setImageModalVisible(false); // Close the modal
+        setImageModalVisible(false); 
       } else {
         const errorData = await response.json();
         setError(`Error removing image: ${errorData.message}`);
