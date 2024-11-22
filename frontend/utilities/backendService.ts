@@ -1,4 +1,3 @@
-// utilities/backendService.ts
 import { Alert } from "react-native";
 import { User } from "./authContext";
 
@@ -259,7 +258,7 @@ export async function createUserHighlight(
 export async function updateBookSettings(
   user: User,
   bookId: string,
-  settings: { fontSize: number; darkMode: boolean }
+  settings: { font_size: string; dark_mode: boolean }
 ) {
   const response = await fetch(`${backendURL}/book/${bookId}`, {
     method: "PUT",
