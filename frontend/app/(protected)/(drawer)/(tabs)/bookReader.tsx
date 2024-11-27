@@ -256,7 +256,7 @@ const BookReader: React.FC = () => {
     }
   };
   
-  const handleGenerateNewImage = async (highlight: Highlight) => {
+  const handleGenerateNewImage = async (highlight: Selection) => {
     if (!highlight || !highlight.text || !highlight.id) {
       console.error("Invalid highlight selected for image generation");
       return;
@@ -278,12 +278,15 @@ const BookReader: React.FC = () => {
       );
   
       // Update the selected highlight if it matches the generated one
-      if (selectedHighlight && selectedHighlight.id === highlight.id) {
-        setSelectedHighlight((prev) => ({
-          ...prev,
-          imgUrl: newImageUrl,
-        }));
-      }
+      setSelectedHighlight((prev) => {
+        if (prev && prev.id === highlight.id) {
+          return {
+            ...prev,
+            imgUrl: newImageUrl,
+          }
+        }
+        return prev;
+      });
   
       console.log("Image successfully generated:", newImageUrl);
     } catch (error) {
