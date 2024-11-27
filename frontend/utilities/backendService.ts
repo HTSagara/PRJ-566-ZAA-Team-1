@@ -192,6 +192,29 @@ export async function deleteHighlightImage(
   }
 }
 
+// Generate a new image for a highlight with no image
+export async function generateHighlightImage(
+  user: User,
+  bookId: string,
+  highlightId: string
+) {
+  const url = `${backendURL}/book/${bookId}/highlight/${highlightId}/generate`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: user.authorizationHeaders(),
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    console.log("Image successfully generated:", data.imgUrl);
+    return data.imgUrl;
+  } else {
+    const error = await response.json();
+    console.error("Failed to generate highlight image:", error);
+    throw new Error("Failed to generate highlight image.");
+  }
+}
+
 // Regenerate the highlight image with a PUT request
 export async function regenerateHighlightImage(
   user: User,

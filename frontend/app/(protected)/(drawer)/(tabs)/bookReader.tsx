@@ -26,7 +26,8 @@ import {
   getAllHighlightsByBookId,
   getBookByBookId,
   createCustomImage, 
-  createUserHighlight, 
+  createUserHighlight,
+  generateHighlightImage,
 } from "@/utilities/backendService";
 import Loading from "@/components/Loading";
 
@@ -211,7 +212,7 @@ const BookReader: React.FC = () => {
     }
   };
   
-  const handleGenerateNewImage = async (highlight) => {
+  const handleGenerateNewImage = async (highlight: Highlight) => {
     if (!highlight || !highlight.text || !highlight.id) {
       console.error("Invalid highlight selected for image generation");
       return;
@@ -222,37 +223,25 @@ const BookReader: React.FC = () => {
       setSaveMessage("Generating image...");
       setModalVisible(true);
   
-      // Call the backend API to generate a new image
-      const url = `http://localhost:8000/book/${bookId}/highlight/${highlight.id}/generate`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: user.authorizationHeaders(),
-      });
+      // Generate the new image using the backend service
+      const newImageUrl = await generateHighlightImage(user, bookId, highlight.id);
   
-      if (response.ok) {
-        const data = await response.json();
-        const newImageUrl = data.imgUrl;
+      // Update the highlights array with the new image URL
+      setHighlights((prevHighlights) =>
+        prevHighlights.map((h) =>
+          h.id === highlight.id ? { ...h, imgUrl: newImageUrl } : h
+        )
+      );
   
-        // Update the highlights array with the new image URL
-        setHighlights((prevHighlights) =>
-          prevHighlights.map((h) =>
-            h.id === highlight.id ? { ...h, imgUrl: newImageUrl } : h
-          )
-        );
-  
-        // Update the selected highlight if it matches the generated one
-        if (selectedHighlight && selectedHighlight.id === highlight.id) {
-          setSelectedHighlight((prev) => ({
-            ...prev,
-            imgUrl: newImageUrl,
-          }));
-        }
-  
-        console.log("Image successfully generated:", newImageUrl);
-      } else {
-        console.error("Failed to generate image", response);
-        setSaveError(true);
+      // Update the selected highlight if it matches the generated one
+      if (selectedHighlight && selectedHighlight.id === highlight.id) {
+        setSelectedHighlight((prev) => ({
+          ...prev,
+          imgUrl: newImageUrl,
+        }));
       }
+  
+      console.log("Image successfully generated:", newImageUrl);
     } catch (error) {
       console.error("Error while generating new image:", error);
       setSaveError(true);
@@ -260,7 +249,7 @@ const BookReader: React.FC = () => {
       // Hide the loading modal
       setModalVisible(false);
     }
-  };
+  };  
   
   
   const handleHighlight = async () => {
