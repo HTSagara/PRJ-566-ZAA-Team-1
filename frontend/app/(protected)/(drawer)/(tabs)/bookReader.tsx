@@ -21,11 +21,12 @@ import { AuthContext, type User } from "@/utilities/authContext";
 import {
   type Highlight,
   type Selection,
+  generateHighlightImage,
   regenerateHighlightImage,
   fetchUpdatedHighlight,
   getAllHighlightsByBookId,
   getBookByBookId,
-  createCustomImage,
+  createCustomImage, 
   createUserHighlight,
   getBookSettings,
   updateBookSettings,
@@ -216,7 +217,7 @@ const BookReader: React.FC = () => {
         console.error("Unable to extract highlight ID from imgUrl:", imgUrl);
         return;
       }
-
+  
       setModalVisible(true);
 
       const putSuccess = await regenerateHighlightImage(
@@ -224,18 +225,19 @@ const BookReader: React.FC = () => {
         bookId,
         highlightId
       );
+
       if (putSuccess) {
         const updatedHighlight = await fetchUpdatedHighlight(
           user,
           bookId,
           highlightId
         );
-
+  
         const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
-
+  
         setHighlights(
           highlights.map((h) =>
-            h.location === selectedHighlight.location
+            h.location === selectedHighlight?.location
               ? { ...h, imgUrl: timestampedUrl }
               : h
           )
@@ -243,15 +245,60 @@ const BookReader: React.FC = () => {
         setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });
       }
     } catch (error) {
+
       console.error(
         "Error in regenerating image or fetching updated highlight:",
         error
       );
+
     } finally {
       setModalVisible(false);
     }
   };
-
+  
+  const handleGenerateNewImage = async (highlight: Selection) => {
+    if (!highlight || !highlight.text || !highlight.id) {
+      console.error("Invalid highlight selected for image generation");
+      return;
+    }
+  
+    try {
+      // Show the loading modal
+      setSaveMessage("Generating image...");
+      setModalVisible(true);
+  
+      // Generate the new image using the backend service
+      const newImageUrl = await generateHighlightImage(user, bookId, highlight.id);
+  
+      // Update the highlights array with the new image URL
+      setHighlights((prevHighlights) =>
+        prevHighlights.map((h) =>
+          h.id === highlight.id ? { ...h, imgUrl: newImageUrl } : h
+        )
+      );
+  
+      // Update the selected highlight if it matches the generated one
+      setSelectedHighlight((prev) => {
+        if (prev && prev.id === highlight.id) {
+          return {
+            ...prev,
+            imgUrl: newImageUrl,
+          }
+        }
+        return prev;
+      });
+  
+      console.log("Image successfully generated:", newImageUrl);
+    } catch (error) {
+      console.error("Error while generating new image:", error);
+      setSaveError(true);
+    } finally {
+      // Hide the loading modal
+      setModalVisible(false);
+    }
+  };  
+  
+  
   const handleHighlight = async () => {
     if (rendition && selection) {
       setSaveMessage("Saving highlight...");
@@ -358,7 +405,7 @@ const BookReader: React.FC = () => {
     }
     setContextMenu({ visible: false, x: 0, y: 0 });
   };
-
+  
   const handleHighlightClick = (highlight: Selection) => {
     setSelectedHighlight(highlight);
     setImageModalVisible(true);
@@ -551,7 +598,7 @@ const BookReader: React.FC = () => {
               <>
                 <View style={styles.imageHeader}>
                   <Text style={{ fontSize: 20 }}>Generated image:</Text>
-                  <TouchableOpacity onPress={() => handleRegenerate()}>
+                  <TouchableOpacity onPress={handleRegenerate}>
                     <Icon
                       name="refresh"
                       size={19}
@@ -574,13 +621,27 @@ const BookReader: React.FC = () => {
                   </TouchableOpacity>
                 </View>
                 <Image
-                  source={{ uri: selectedHighlight.imgUrl }}
+                  source={{ uri: selectedHighlight?.imgUrl }}
                   style={{ width: 425, height: 425 }}
                   resizeMode="contain"
                 />
               </>
             ) : (
-              <Text>No image available for this highlight.</Text>
+              <>
+                <Text>No image available for this highlight.</Text>
+                <TouchableOpacity
+                  style={styles.visualizeButton}
+                  onPress={() => {
+                  if (selectedHighlight && !selectedHighlight.imgUrl) {
+                    handleGenerateNewImage(selectedHighlight);
+                  } else {
+                    console.error("Highlight already has an image or is invalid");
+                  }
+                }}
+              >
+                <Text style={styles.buttonText}>Visualize</Text>
+                </TouchableOpacity>
+              </>
             )}
             <TouchableOpacity onPress={() => setImageModalVisible(false)}>
               <Text style={styles.closeButtonText}>Close</Text>
@@ -763,6 +824,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "white",
     fontWeight: "bold",
+  },
+  visualizeButton: {
+    backgroundColor: "#007BFF",
+    color: "#FFFFFF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginTop: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 
