@@ -1,4 +1,3 @@
-// utilities/backendService.ts
 import { Alert } from "react-native";
 import { User } from "./authContext";
 
@@ -28,7 +27,6 @@ export interface Selection {
   location: string;
   imgUrl?: string;
 }
-
 
 // This method will fetch all the books for the currently logged
 export async function getAllBooks(user: User) {
@@ -151,7 +149,7 @@ export async function getAllHighlightsByBookId(user: User, bookId: string) {
 export async function deleteHighlight(
   user: User,
   bookId: string,
-  highlightId: string,
+  highlightId: string
 ) {
   const response = await fetch(
     backendURL + `/book/${bookId}/highlight/${highlightId}`,
@@ -161,7 +159,7 @@ export async function deleteHighlight(
         "Content-Type": "application/json",
         Authorization: `Bearer ${user.accessToken}`,
       },
-    },
+    }
   );
 
   // throw error if bad response
@@ -175,14 +173,14 @@ export async function deleteHighlight(
 export async function deleteHighlightImage(
   user: User,
   bookId: string,
-  highlightId: string,
+  highlightId: string
 ) {
   const response = await fetch(
     `${backendURL}/book/${bookId}/highlight/${highlightId}/image`,
     {
       method: "DELETE",
       headers: user.authorizationHeaders(),
-    },
+    }
   );
 
   // throw error if bad response
@@ -219,7 +217,7 @@ export async function generateHighlightImage(
 export async function regenerateHighlightImage(
   user: User,
   bookId: string,
-  highlightId: string,
+  highlightId: string
 ) {
   const url = `${backendURL}/book/${bookId}/highlight/${highlightId}`;
   const response = await fetch(url, {
@@ -243,7 +241,7 @@ export async function regenerateHighlightImage(
 export async function fetchUpdatedHighlight(
   user: User,
   bookId: string,
-  highlightId: string,
+  highlightId: string
 ) {
   const url = `${backendURL}/book/${bookId}/highlight/${highlightId}`;
   const response = await fetch(url, {
@@ -265,24 +263,75 @@ export async function fetchUpdatedHighlight(
 }
 
 // This method will create a new highlight for the user
-export async function createUserHighlight(user: User, bookId: string, selection: Selection)
-{
+export async function createUserHighlight(
+  user: User,
+  bookId: string,
+  selection: Selection
+) {
   const response = await fetch(backendURL + `/book/${bookId}/highlight`, {
     method: "POST",
     body: JSON.stringify(selection),
     headers: user.authorizationHeaders(),
   });
 
-  if (response.status === 200)
-    return true;
-  else 
-    return false;
+  if (response.status === 200) return true;
+  else return false;
 }
 
-export async function createCustomImage(user: User, bookId: string, highlightId: string, customText: string) {
-  const response = await fetch( backendURL + `/book/${bookId}/highlight/${highlightId}`,
+export async function updateBookSettings(
+  user: User,
+  bookId: string,
+  settings: { font_size: string; dark_mode: boolean }
+) {
+  const response = await fetch(`${backendURL}/book/${bookId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${user.accessToken}`,
+    },
+    body: JSON.stringify(settings),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(`Failed to update book settings: ${errorData.message}`);
+  }
+}
+
+// Fetch the settings for a specific book
+export async function getBookSettings(user: User, bookId: string) {
+  try {
+    const response = await fetch(`${backendURL}/book/${bookId}/settings`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${user.accessToken}`,
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data; // Return the settings object (e.g., { fontSize, darkMode })
+    } else {
+      const errorData = await response.json();
+      console.error("Failed to fetch book settings:", errorData.message);
+      throw new Error("Failed to fetch book settings.");
+    }
+  } catch (error) {
+    console.error("Error in getBookSettings:", error);
+    throw error;
+  }
+}
+
+export async function createCustomImage(
+  user: User,
+  bookId: string,
+  highlightId: string,
+  customText: string
+) {
+  const response = await fetch(
+    backendURL + `/book/${bookId}/highlight/${highlightId}`,
     {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(customText),
       headers: {
         Authorization: `Bearer ${user.accessToken}`,
@@ -290,11 +339,10 @@ export async function createCustomImage(user: User, bookId: string, highlightId:
     }
   );
 
-  if (response.status === 200)
-  {
+  if (response.status === 200) {
     console.log("Image regeneration succeeded");
     return true;
-  }else {
+  } else {
     const error = await response.json();
     console.error("Image regeneration failed:", error);
     throw new Error("Failed to regenerate highlight image.");
