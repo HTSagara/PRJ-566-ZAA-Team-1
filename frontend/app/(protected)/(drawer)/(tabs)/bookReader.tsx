@@ -182,42 +182,87 @@ const BookReader: React.FC = () => {
         console.error("Unable to extract highlight ID from imgUrl:", imgUrl);
         return;
       }
-
+  
       setModalVisible(true);
-
-      const putSuccess = await regenerateHighlightImage(
-        user,
-        bookId,
-        highlightId,
-      );
+  
+      const putSuccess = await regenerateHighlightImage(user, bookId, highlightId);
       if (putSuccess) {
         const updatedHighlight = await fetchUpdatedHighlight(
           user,
           bookId,
-          highlightId,
+          highlightId
         );
-
+  
         const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
-
+  
         setHighlights(
           highlights.map((h) =>
-            h.location === selectedHighlight.location
+            h.location === selectedHighlight?.location
               ? { ...h, imgUrl: timestampedUrl }
-              : h,
-          ),
+              : h
+          )
         );
         setSelectedHighlight({ ...updatedHighlight, imgUrl: timestampedUrl });
       }
     } catch (error) {
-      console.error(
-        "Error in regenerating image or fetching updated highlight:",
-        error,
-      );
+      console.error("Error regenerating image:", error);
     } finally {
       setModalVisible(false);
     }
   };
-
+  
+  const handleGenerateNewImage = async (highlight) => {
+    if (!highlight || !highlight.text || !highlight.id) {
+      console.error("Invalid highlight selected for image generation");
+      return;
+    }
+  
+    try {
+      // Show the loading modal
+      setSaveMessage("Generating image...");
+      setModalVisible(true);
+  
+      // Call the backend API to generate a new image
+      const url = `http://localhost:8000/book/${bookId}/highlight/${highlight.id}/generate`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: user.authorizationHeaders(),
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        const newImageUrl = data.imgUrl;
+  
+        // Update the highlights array with the new image URL
+        setHighlights((prevHighlights) =>
+          prevHighlights.map((h) =>
+            h.id === highlight.id ? { ...h, imgUrl: newImageUrl } : h
+          )
+        );
+  
+        // Update the selected highlight if it matches the generated one
+        if (selectedHighlight && selectedHighlight.id === highlight.id) {
+          setSelectedHighlight((prev) => ({
+            ...prev,
+            imgUrl: newImageUrl,
+          }));
+        }
+  
+        console.log("Image successfully generated:", newImageUrl);
+      } else {
+        console.error("Failed to generate image", response);
+        setSaveError(true);
+      }
+    } catch (error) {
+      console.error("Error while generating new image:", error);
+      setSaveError(true);
+    } finally {
+      // Hide the loading modal
+      setModalVisible(false);
+    }
+  };
+  
+  
   const handleHighlight = async () => {
     if (rendition && selection) {
       setSaveMessage("Saving highlight...");
@@ -295,32 +340,22 @@ const BookReader: React.FC = () => {
   };
 
   const handleRenderImage = async () => {
-    const highlightToRender = selection || selectedHighlight;
-  
-    if (rendition && highlightToRender) {
+    if (rendition && selection) {
       setSaveMessage("Visualizing highlight...");
       setModalVisible(true);
-  
+
       try {
         const url = `http://localhost:8000/book/${bookId}/highlight?image=true`;
         const response = await fetch(url, {
           method: "POST",
-          body: JSON.stringify(highlightToRender),
+          body: JSON.stringify(selection),
           headers: user.authorizationHeaders(),
         });
-  
+
         if (response.ok) {
           const data = await response.json();
           setGeneratedImageUrl(data.imgUrl || null);
-  
-          setHighlights([
-            ...highlights,
-            { ...highlightToRender, imgUrl: data.imgUrl },
-          ]);
-          setSelectedHighlight({
-            ...highlightToRender,
-            imgUrl: data.imgUrl,
-          });
+          setHighlights([...highlights, { ...selection, imgUrl: data.imgUrl }]);
         } else {
           console.error("Failed to visualize highlight", response);
           setSaveError(true);
@@ -331,12 +366,10 @@ const BookReader: React.FC = () => {
       } finally {
         setModalVisible(false);
       }
-    } else {
-      console.error("No valid highlight selected or found");
     }
     setContextMenu({ visible: false, x: 0, y: 0 });
-  };  
-
+  };
+  
   const handleHighlightClick = (highlight: Selection) => {
     setSelectedHighlight(highlight);
     setImageModalVisible(true);
@@ -523,7 +556,7 @@ const BookReader: React.FC = () => {
                   </TouchableOpacity>
                 </View>
                 <Image
-                  source={{ uri: selectedHighlight.imgUrl }}
+                  source={{ uri: selectedHighlight?.imgUrl }}
                   style={{ width: 425, height: 425 }}
                   resizeMode="contain"
                 />
@@ -531,8 +564,17 @@ const BookReader: React.FC = () => {
             ) : (
               <>
                 <Text>No image available for this highlight.</Text>
-                <TouchableOpacity onPress={handleRenderImage}>
-                  <Text style={styles.visualizeButton}>Visualize</Text>
+                <TouchableOpacity
+                  style={styles.visualizeButton}
+                  onPress={() => {
+                  if (selectedHighlight && !selectedHighlight.imgUrl) {
+                    handleGenerateNewImage(selectedHighlight);
+                  } else {
+                    console.error("Highlight already has an image or is invalid");
+                  }
+                }}
+              >
+                <Text style={styles.buttonText}>Visualize</Text>
                 </TouchableOpacity>
               </>
             )}
