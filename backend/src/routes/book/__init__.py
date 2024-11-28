@@ -34,6 +34,14 @@ class BookFormData(BaseModel):
     author: Optional[str] = None
     file: UploadFile
 
+# New Class for Book Settings
+
+class BookSettings(BaseModel):
+
+    font_size: str  # Example: "16px"
+
+    dark_mode: bool  # True for dark mode, False for light mode
+
 @router.post("/book", tags=["book"])
 async def upload_book(request: Request, data: Annotated[BookFormData, Form()]):
     user_email = request.state.user['email']
@@ -64,7 +72,57 @@ async def upload_book(request: Request, data: Annotated[BookFormData, Form()]):
     return book.get_metadata()
 
 
+@router.put("/book/{book_id}", tags=["book"])
 
+async def update_book_settings(request: Request, book_id: str, settings: BookSettings):
+
+    """
+
+    Update book-specific settings like font size and dark mode in the database.
+
+    """
+    owner_id = request.state.user["id"]
+
+
+
+    # Get MongoDB collection
+
+    collection = get_mongodb_collection(owner_id)
+    # Prepare update data
+
+    update_data = {
+
+        "settings.font_size": settings.font_size,
+
+        "settings.dark_mode": settings.dark_mode,
+
+    }
+
+
+
+    # Update the book settings in MongoDB
+
+    result = collection.update_one(
+
+        {"_id": book_id, "ownerId": owner_id},  # Match book and owner
+
+        {"$set": update_data}  # Update fields
+
+    )
+
+
+
+    if result.matched_count == 0:
+
+        raise HTTPException(status_code=404, detail="Book not found.")
+
+    if result.modified_count == 0:
+
+        return {"message": "No changes were made."}
+
+
+
+    return {"message": "Successfully updated book settings."}
 
 # GET /books - Retrieve Books Metadata API
 @router.get("/books", tags=["book"])
@@ -104,7 +162,36 @@ async def get_book_info(request: Request, book_id: str):
 
     return JSONResponse(content=book_metadata)
 
+# fetch book settings
+@router.get("/book/{book_id}/settings", tags=["book"])
+async def get_book_settings(request: Request, book_id: str):
+    """
+    Retrieve book-specific settings. Ensure the 'settings' key exists, and initialize if not present.
+    """
+    owner_id = request.state.user["id"]
 
+    # Get MongoDB collection
+    collection = get_mongodb_collection(owner_id)
+
+    # Try to find the book document
+    book_metadata = collection.find_one({"_id": book_id, "ownerId": owner_id})
+
+    if not book_metadata:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
+
+    # Check if 'settings' exists; if not, initialize with default values
+    if "settings" not in book_metadata:
+        default_settings = {
+            "font_size": 16,
+            "dark_mode": False
+        }
+        collection.update_one(
+            {"_id": book_id, "ownerId": owner_id},
+            {"$set": {"settings": default_settings}}
+        )
+        book_metadata["settings"] = default_settings
+
+    return JSONResponse(content=book_metadata["settings"])
 
 
 # GET book content from amazon S3 bucket  
