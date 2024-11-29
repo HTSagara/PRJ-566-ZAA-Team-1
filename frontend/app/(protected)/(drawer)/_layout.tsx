@@ -40,6 +40,26 @@ export default function DrawerLayout() {
             ),
           }}
         />
+        <Drawer.Screen
+          name="bookDetails"
+          options={{
+            title: "Book Details",
+            drawerItemStyle: { display: 'none' }, // Hides the screen from the drawer list
+          }}
+        />
+        <Drawer.Screen
+          name="highlights"
+          options={{
+            title: "Highlights",
+            drawerItemStyle: { display: 'none' }, // Hides the screen from the drawer list
+          }}
+        />
+        <Drawer.Screen
+          name="bookReader"
+          options={{
+            drawerItemStyle: { display: 'none' }, // Hides the screen from the drawer list
+          }}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );
