@@ -5,12 +5,16 @@ import Loading from "@/components/Loading";
 import { User, getUser, AuthContext } from "@/utilities/authContext";
 import { BookContext } from "@/utilities/bookContext";
 import { type Book } from "@/utilities/backendService";
+import { type Highlight } from "@/utilities/backendService";
+import { HighlightContext } from "@/utilities/highlightContext";
 
 export default function DrawerLayout() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [books, setBooks] = useState<Book[]>([]);
   const bookContext = { books, setBooks };
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const highlightContext = { highlights, setHighlights };
 
   useEffect(() => {
     async function init() {
@@ -38,7 +42,9 @@ export default function DrawerLayout() {
     return (
       <AuthContext.Provider value={user}>
         <BookContext.Provider value={bookContext}>
-          <Slot />
+          <HighlightContext.Provider value={highlightContext}>
+            <Slot />
+          </HighlightContext.Provider>
         </BookContext.Provider>
       </AuthContext.Provider>
     );

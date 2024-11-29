@@ -274,8 +274,12 @@ export async function createUserHighlight(
     headers: user.authorizationHeaders(),
   });
 
-  if (response.status === 200) return true;
-  else return false;
+  if (response.status === 200) {
+    // return true;
+    return await response.json();
+  }
+  else 
+    return null;
 }
 
 export async function updateBookSettings(

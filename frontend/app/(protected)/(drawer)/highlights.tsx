@@ -24,12 +24,13 @@ import {
   deleteHighlight,
   deleteHighlightImage,
 } from "@/utilities/backendService";
+import { HighlightContext } from "@/utilities/highlightContext";
 
 export default function ShowBookHighlights() {
   const user = useContext(AuthContext) as User;
 
   const route = useRoute();
-  const [highlight, setHighlight] = useState<Highlight[]>([]);
+  const {highlights, setHighlights} = useContext(HighlightContext);
   const [modalVisible, setModalVisible] = useState(false);
 
   const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(
@@ -49,7 +50,7 @@ export default function ShowBookHighlights() {
     const fetchHighlights = async () => {
       try {
         const data = await getAllHighlightsByBookId(user, bookId);
-        setHighlight(data);
+        setHighlights(data);
       } catch (err) {
         console.log(`Exception while calling the API: ${err}.`);
         Alert.alert("Error", "Failed during the API call.");
@@ -66,7 +67,7 @@ export default function ShowBookHighlights() {
         await deleteHighlight(user, bookId, selectedHighlightId);
 
         // Remove highlight
-        setHighlight((prevHighlights) => {
+        setHighlights((prevHighlights) => {
           return prevHighlights.filter((h) => h.id !== selectedHighlightId);
         });
 
@@ -88,7 +89,7 @@ export default function ShowBookHighlights() {
         await deleteHighlightImage(user, bookId, selectedHighlightId);
 
         // Remove image from the selected highlight
-        setHighlight((prevHighlights) => {
+        setHighlights((prevHighlights) => {
           return prevHighlights.map((item) => {
             return item.id === selectedHighlightId
               ? { ...item, imgUrl: undefined }
@@ -119,7 +120,7 @@ export default function ShowBookHighlights() {
         </View>
       </View>
 
-      {highlight.length <= 0 ? (
+      {highlights.length <= 0 ? (
         <View
           style={{
             flex: 1,
@@ -141,7 +142,7 @@ export default function ShowBookHighlights() {
         >
           <View style={{ width: "100%", maxWidth: 1536 }}>
             <FlatList
-              data={highlight}
+              data={highlights}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   onPress={() => {

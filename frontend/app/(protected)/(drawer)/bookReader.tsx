@@ -27,12 +27,14 @@ import {
   fetchUpdatedHighlight,
   getAllHighlightsByBookId,
   getBookByBookId,
-  createCustomImage, 
+  createCustomImage,
   createUserHighlight,
-  getBookSettings,
+  deleteHighlight,
   updateBookSettings,
+  getBookSettings,
 } from "@/utilities/backendService";
 import Loading from "@/components/Loading";
+import { HighlightContext } from "@/utilities/highlightContext";
 
 import type { StackNavigationProp } from "@react-navigation/stack";
 
@@ -47,6 +49,8 @@ type BookReaderScreenNavigationProp = StackNavigationProp<
 
 const BookReader: React.FC = () => {
   const user = useContext(AuthContext) as User;
+  const { highlights, setHighlights } = useContext(HighlightContext);
+
   const ctxMenuRef = useRef<any>(null);
 
   const route = useRoute();
@@ -58,7 +62,6 @@ const BookReader: React.FC = () => {
 
   const [location, setLocation] = useState<string | number>(0);
   const [bookUrl, setBookUrl] = useState<string | null>(null);
-  const [highlights, setHighlights] = useState<Selection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -70,7 +73,7 @@ const BookReader: React.FC = () => {
   const [saveErrorMessage, setSaveErrorMessage] = useState<string>(
     "Error saving highlight."
   );
-  const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(
+  const [selectedHighlight, setSelectedHighlight] = useState<Highlight | null>(
     null
   );
   const [inputText, setInputText] = useState<string>();
@@ -224,7 +227,7 @@ const BookReader: React.FC = () => {
         rendition?.off("selected", setRenderSelection);
       };
     }
-  }, [setSelection, rendition, highlights]);
+  }, [setSelection, rendition]);
 
   const handleRegenerate = async () => {
     if (!selectedHighlight || !selectedHighlight.imgUrl) return;
@@ -347,6 +350,17 @@ const BookReader: React.FC = () => {
           // The return type for getContents() is outdated and actually returns
           //   Contents[] instead of Contents
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
+
+          setHighlights(prev => {
+            return [
+              ...prev,
+              {
+                id: response.highlightId,
+               ...selection, 
+              }
+            ]
+          });
+
           setSaveError(false);
         } else {
           console.error("Failed to save highlight", response);
@@ -382,7 +396,7 @@ const BookReader: React.FC = () => {
             item.id === highlightId ? { ...item, imgUrl: undefined } : item
           )
         );
-        setImageModalVisible(false); // Close the modal
+        setImageModalVisible(false); 
       } else {
         const errorData = await response.json();
         setError(`Error removing image: ${errorData.message}`);
@@ -411,8 +425,9 @@ const BookReader: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           setGeneratedImageUrl(data.imgUrl || null);
-          setHighlights([...highlights, { ...selection, imgUrl: data.imgUrl }]);
-        } else {
+          setHighlights([...highlights, { ...selection, imgUrl: data.imgUrl, id: data.highlightId }]);
+        } 
+        else {
           console.error("Failed to visualize highlight", response);
           setSaveError(true);
         }
@@ -426,7 +441,7 @@ const BookReader: React.FC = () => {
     setContextMenu({ visible: false, x: 0, y: 0 });
   };
   
-  const handleHighlightClick = (highlight: Selection) => {
+  const handleHighlightClick = (highlight: Highlight) => {
     setSelectedHighlight(highlight);
     setImageModalVisible(true);
   };
@@ -484,7 +499,6 @@ const BookReader: React.FC = () => {
             bookId,
             highlightId
           );
-
           const timestampedUrl = `${updatedHighlight.imgUrl}?t=${new Date().getTime()}`;
 
           setHighlights(
@@ -503,6 +517,33 @@ const BookReader: React.FC = () => {
         );
       } finally {
         setModalVisible(false);
+      }
+    }
+  }
+
+  // Delete highlight with no text from the model
+  const handleDeletehighlight = async () => {
+    if (selectedHighlight) {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Call the delete API
+        await deleteHighlight(user, bookId, selectedHighlight.id);
+
+        // Remove the selected highlight from the list
+        setHighlights((prevHighlights) =>
+          prevHighlights.filter((item) => item.id !== selectedHighlight.id)
+        );
+
+        // Optionally clear the selectedHighlight
+        setSelectedHighlight(null);
+      } catch (err) {
+        console.log(`Exception while calling the delete API: ${err}.`);
+        setError("Error removing image.");
+      } finally {
+        setLoading(false);
+        setImageModalVisible(false);
       }
     }
   };
@@ -664,6 +705,14 @@ const BookReader: React.FC = () => {
               </>
             ) : (
               <>
+                <View style={styles.imageHeaderTrash}>
+                  <Icon
+                    name="trash"
+                    size={24}
+                    style={{ color: "gray", marginHorizontal: 10 }}
+                    onPress={handleDeletehighlight}
+                  />
+                </View>
                 <Text>No image available for this highlight.</Text>
                 <TouchableOpacity
                   style={styles.visualizeButton}
@@ -858,8 +907,14 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
-    color: "white",
-    fontWeight: "bold",
+    color: 'white',
+    fontWeight: 'bold'
+  },
+  imageHeaderTrash: {
+    position: 'absolute',
+    top: 11,
+    right: 11,
+    zIndex: 5,
   },
   visualizeButton: {
     backgroundColor: "#007BFF",
