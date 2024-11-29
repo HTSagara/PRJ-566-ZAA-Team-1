@@ -101,7 +101,7 @@ export default function user() {
   const handleDelete = async () => {
     // Ask for confirmation before deletion
     const confirmed = window.confirm(
-      "So SAD to see you go :( Sure to DELETE your account?",
+      "So SAD to see you go :( Sure to DELETE your account?"
     );
 
     if (confirmed) {
@@ -218,7 +218,7 @@ export default function user() {
                     lightBg="rgb(34 197 94)"
                     darkFg="white"
                     darkBg="rgb(21 128 61)"
-                    title="Log Out"
+                    title="Sign Out"
                     onPress={() => Auth.signOut()}
                   />
                   <ThemedButton
