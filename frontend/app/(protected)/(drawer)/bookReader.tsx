@@ -90,6 +90,13 @@ const BookReader: React.FC = () => {
   const imageURL = selectedHighlight?.imgUrl;
   const highlightId = imageURL?.split("/").pop()?.replace(".png", "");
 
+  // const navigation = useNavigation();
+
+  useEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
+
   // Fetch book data and settings
   useEffect(() => {
     if (!bookId) {
