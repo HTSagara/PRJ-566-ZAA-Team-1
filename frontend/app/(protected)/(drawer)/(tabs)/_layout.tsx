@@ -43,8 +43,10 @@ export default function TabLayout() {
         options={{
           tabBarButton: () => null, // Hides the tab button
           headerShown: false,
+          tabBarStyle: { display: "none" }, // Ensure tab bar is hidden
         }}
       />
+
       <Tabs.Screen
         name="libraryStack"
         options={{

@@ -16,6 +16,7 @@ import type { Rendition, Contents } from "epubjs";
 import Section from "epubjs/types/section";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Feather from "react-native-vector-icons/Feather";
+import { useNavigation } from "@react-navigation/native";
 
 import { AuthContext, type User } from "@/utilities/authContext";
 import {
@@ -30,6 +31,17 @@ import {
 } from "@/utilities/backendService";
 import Loading from "@/components/Loading";
 
+import type { StackNavigationProp } from "@react-navigation/stack";
+
+
+import { RootStackParamList } from "@/app/(protected)/(drawer)/(tabs)/types"; // Adjust this path to match your project structure
+
+// Explicitly type navigation as a stack navigator
+type BookReaderScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "bookReader"
+>;
+
 const BookReader: React.FC = () => {
   const user = useContext(AuthContext) as User;
   const ctxMenuRef = useRef<any>(null);
@@ -39,6 +51,7 @@ const BookReader: React.FC = () => {
     bookId: string;
     userHighlight: Highlight;
   };
+  const navigation = useNavigation<BookReaderScreenNavigationProp>(); // nav
 
   const [location, setLocation] = useState<string | number>(0);
   const [bookUrl, setBookUrl] = useState<string | null>(null);
@@ -390,6 +403,10 @@ const BookReader: React.FC = () => {
     }
   }
 
+  const handleBack = () => {
+    navigation.navigate("bookDetails", { bookId });
+  };
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -407,8 +424,20 @@ const BookReader: React.FC = () => {
     );
   }
 
+  
+
   return (
     <View style={{ flex: 1 }}>
+
+      {/* Header with Back Button */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <Icon name="arrow-left" size={20} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Back</Text>
+      </View>
+
+
       {bookUrl ? (
         <ReactReader
           url={bookUrl}
@@ -699,6 +728,33 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold'
   },
+
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    backgroundColor: "#f5f5f5",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  backButton: {
+    padding: 10,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 10,
+  },
+
 });
 
 export default BookReader;
