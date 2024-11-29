@@ -30,11 +30,15 @@ import {
   createUserHighlight,
   deleteHighlight,
   updateBookSettings,
+  getBookSettings,
 } from "@/utilities/backendService";
 import Loading from "@/components/Loading";
+import { HighlightContext } from "@/utilities/highlightContext";
 
 const BookReader: React.FC = () => {
   const user = useContext(AuthContext) as User;
+  const { highlights, setHighlights } = useContext(HighlightContext);
+
   const ctxMenuRef = useRef<any>(null);
 
   const route = useRoute();
@@ -45,7 +49,6 @@ const BookReader: React.FC = () => {
 
   const [location, setLocation] = useState<string | number>(0);
   const [bookUrl, setBookUrl] = useState<string | null>(null);
-  const [highlights, setHighlights] = useState<Selection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -57,7 +60,7 @@ const BookReader: React.FC = () => {
   const [saveErrorMessage, setSaveErrorMessage] = useState<string>(
     "Error saving highlight."
   );
-  const [selectedHighlight, setSelectedHighlight] = useState<Selection | null>(
+  const [selectedHighlight, setSelectedHighlight] = useState<Highlight | null>(
     null
   );
   const [inputText, setInputText] = useState<string>();
@@ -204,7 +207,7 @@ const BookReader: React.FC = () => {
         rendition?.off("selected", setRenderSelection);
       };
     }
-  }, [setSelection, rendition, highlights]);
+  }, [setSelection, rendition]);
 
   const handleRegenerate = async () => {
     if (!selectedHighlight || !selectedHighlight.imgUrl) return;
@@ -327,7 +330,17 @@ const BookReader: React.FC = () => {
           // The return type for getContents() is outdated and actually returns
           //   Contents[] instead of Contents
           rendition.getContents()[0]?.window?.getSelection()?.removeAllRanges();
-          setHighlights([...highlights, { ...selection }]);
+
+          setHighlights(prev => {
+            return [
+              ...prev,
+              {
+                id: response.highlightId,
+               ...selection, 
+              }
+            ]
+          });
+
           setSaveError(false);
         } else {
           console.error("Failed to save highlight", response);
@@ -392,8 +405,9 @@ const BookReader: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           setGeneratedImageUrl(data.imgUrl || null);
-          setHighlights([...highlights, { ...selection, imgUrl: data.imgUrl }]);
-        } else {
+          setHighlights([...highlights, { ...selection, imgUrl: data.imgUrl, id: data.highlightId }]);
+        } 
+        else {
           console.error("Failed to visualize highlight", response);
           setSaveError(true);
         }
@@ -407,7 +421,7 @@ const BookReader: React.FC = () => {
     setContextMenu({ visible: false, x: 0, y: 0 });
   };
   
-  const handleHighlightClick = (highlight: Selection) => {
+  const handleHighlightClick = (highlight: Highlight) => {
     setSelectedHighlight(highlight);
     setImageModalVisible(true);
   };
@@ -663,6 +677,7 @@ const BookReader: React.FC = () => {
                     onPress={handleDeletehighlight}
                   />
                 </View>
+                <Text>No image available for this highlight.</Text>
                 <TouchableOpacity
                   style={styles.visualizeButton}
                   onPress={() => {
