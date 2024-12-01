@@ -74,9 +74,12 @@ The **Visualize** feature lets you generate AI-powered custom visuals based on y
    - Save the highlighted text for later reference.
    - Generate an AI-powered image representing the selected passage.
 3. **View Generated Image:** Clicking on the highlight will show the generated image in a modal window. Here you can:
-   - **Regenerate the Image:** Use the refresh icon beside the "Generated image" label to regenerate the visual with updated context.
-   - **Regenerate using a custom text prompt:** Use the edit icon to bring up a modal that allows you to enter a prompt for generating the image.
-   - **Delete the Image:** Use the delete icon to remove the image from the highlight.
-4. **Access Saved Highlights:** Navigate to the **Highlights Page** to review all previously generated visuals and highlights.
+   - **Regenerate the Image:** Use the refresh icon beside the "Generated image" label to regenerate the visual with updated context.  
+     ![image](https://github.com/user-attachments/assets/dfdf6a84-1252-40f9-87c1-72d34a7d5ab8)
+   - **Regenerate using a custom text prompt:** Use the edit icon to bring up a modal that allows you to enter a prompt for generating the image.  
+     ![image](https://github.com/user-attachments/assets/8cddc862-004f-44b8-b0cf-eb8cfa02133f)
+   - **Delete the Image:** Use the delete icon to remove the image from the highlight.  
+     ![image](https://github.com/user-attachments/assets/f52c0cf8-0b67-46fd-9300-791fcf91c0a6)
+5. **Access Saved Highlights:** Navigate to the **Highlights Page** to review all previously generated visuals and highlights.
 
 With **Visualize**, WordVision transforms text into engaging visuals, creating a more dynamic and personalized reading experience.
