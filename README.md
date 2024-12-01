@@ -46,13 +46,13 @@ For more technical specifications and how to get started, go to [CONTRIBUTING.md
 
 #### Upload a Book
 
-- In the **Home** click on the **Upload a book** button on the right top.
+- In the **Home** click on the **Upload a book** button on the top right.
 - Select **Pick a file**
 - Select a local `epub` file and click the **Upload** button
 
 #### Reading a book
 
-- Click on the book in your library and you will be redirected to the **Book Summary** page
+- Click on the book in your library and you will be redirected to the **Book Details** page
 - Click on the **Read** button on the top right and start reading your book.
 
 #### Create highlight
@@ -73,9 +73,10 @@ The **Visualize** feature lets you generate AI-powered custom visuals based on y
 2. **Choose "Visualize":** Click on the **Visualize** option. The system will:
    - Save the highlighted text for later reference.
    - Generate an AI-powered image representing the selected passage.
-3. **View Generated Image:** The generated image will appear in a modal window. You can:
-   - **Refresh the Image:** Use the refresh icon beside the "Generated image" label to regenerate the visual with updated context.
-   - **Save the Highlight:** The image and text are stored in your **Highlights Page** for future reference.
+3. **View Generated Image:** Clicking on the highlight will show the generated image in a modal window. Here you can:
+   - **Regenerate the Image:** Use the refresh icon beside the "Generated image" label to regenerate the visual with updated context.
+   - **Regenerate using a custom text prompt:** Use the edit icon to bring up a modal that allows you to enter a prompt for generating the image.
+   - **Delete the Image:** Use the delete icon to remove the image from the highlight.
 4. **Access Saved Highlights:** Navigate to the **Highlights Page** to review all previously generated visuals and highlights.
 
 With **Visualize**, WordVision transforms text into engaging visuals, creating a more dynamic and personalized reading experience.
